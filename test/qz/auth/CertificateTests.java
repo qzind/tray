@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -58,6 +59,20 @@ public class CertificateTests {
         Assert.assertEquals(load(row).getCommonName(), "QZ Test Multi Intermediate Leaf");
     }
 
+    @Test
+    public void testTrustedChains() throws Exception {
+        assertTrust(read("direct-leaf.pem"), "root-ca.pem", true);
+        assertTrust(read("legacy-leaf.pem") + read("intermediate-one.pem"), "root-ca.pem", true);
+        assertTrust(read("standard-chain.pem"), "root-ca.pem", true);
+    }
+
+    @Test
+    public void testUntrustedChains() throws Exception {
+        assertTrust(read("direct-leaf.pem"), "unrelated-ca.pem", false);
+        assertTrust(read("legacy-leaf.pem") + read("intermediate-one.pem"), "unrelated-ca.pem", false);
+        assertTrust(read("standard-chain.pem"), "unrelated-ca.pem", false);
+    }
+
     private void assertNames(String resource, String... expected) throws Exception {
         List<X509Certificate> certificates = Certificate.parseCertificates(read(resource));
 
@@ -83,6 +98,29 @@ public class CertificateTests {
         Assert.assertEquals(actual.getOrganization(), expected.getOrganization());
         Assert.assertEquals(actual.getValidFrom(), expected.getValidFrom());
         Assert.assertEquals(actual.getValidTo(), expected.getValidTo());
+    }
+
+    private void assertTrust(String certificateData, String rootResource, boolean trusted) throws Exception {
+        List<Certificate> previousRoots = new ArrayList<>(Certificate.rootCAs);
+        Certificate previousBuiltIn = Certificate.builtIn;
+
+        try {
+            Certificate.rootCAs.clear();
+            Certificate root = new Certificate(read(rootResource));
+            Certificate.rootCAs.add(root);
+            Certificate.builtIn = root;
+
+            Certificate certificate = new Certificate(certificateData);
+
+            Assert.assertEquals(certificate.isTrusted(), trusted);
+            Assert.assertEquals(Certificate.rootCAs.size(), 1);
+            Assert.assertSame(Certificate.rootCAs.get(0), root);
+        }
+        finally {
+            Certificate.rootCAs.clear();
+            Certificate.rootCAs.addAll(previousRoots);
+            Certificate.builtIn = previousBuiltIn;
+        }
     }
 
     private Certificate load(String row) {

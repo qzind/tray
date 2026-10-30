@@ -7,8 +7,11 @@ import org.apache.commons.ssl.Base64;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.PrincipalUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.App;
@@ -173,26 +176,15 @@ public class Certificate {
         this(new String(Files.readAllBytes(path), Charsets.UTF_8));
     }
 
-    /** Decodes a certificate and intermediate certificate from the given string */
+    /** Decodes a certificate and intermediate certificates from the given string */
     public Certificate(String in) throws CertificateException {
         try {
             // Assume someone else's cert until proven otherwise
             thirdParty = true;
 
-            //Strip beginning and end
-            String[] split = in.split("--START INTERMEDIATE CERT--");
-            byte[] serverCertificate = Base64.decodeBase64(split[0].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
-
-            X509Certificate theIntermediateCertificate;
-            if (split.length == 2) {
-                byte[] intermediateCertificate = Base64.decodeBase64(split[1].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
-                theIntermediateCertificate = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(intermediateCertificate));
-            } else {
-                theIntermediateCertificate = null; //Self-signed
-            }
-
-            //Generate cert
-            theCertificate = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(serverCertificate));
+            List<X509Certificate> certificates = parseCertificates(in);
+            theCertificate = certificates.get(0);
+            List<X509Certificate> intermediateCertificates = certificates.subList(1, certificates.size());
             commonName = getSubjectX509Principal(theCertificate, BCStyle.CN);
             if(commonName.isEmpty()) {
                 throw new CertificateException("Common Name cannot be blank.");
@@ -216,7 +208,7 @@ public class Certificate {
                     HashSet<X509Certificate> chain = new HashSet<>();
                     try {
                         chain.add(rootCA.theCertificate);
-                        if (theIntermediateCertificate != null) { chain.add(theIntermediateCertificate); }
+                        chain.addAll(intermediateCertificates);
                         X509Certificate[] x509Certificates = X509CertificateChainBuilder.buildPath(theCertificate, chain);
 
                         Set<TrustAnchor> anchor = new HashSet<>();
@@ -264,7 +256,11 @@ public class Certificate {
             readRenewalInfo();
             CRL qzCrl = CRL.getInstance();
             if (qzCrl.isLoaded()) {
-                if (qzCrl.isRevoked(getFingerprint()) || (theIntermediateCertificate != null && qzCrl.isRevoked(makeThumbPrint(theIntermediateCertificate)))) {
+                boolean revoked = false;
+                for(X509Certificate certificate : certificates) {
+                    revoked |= qzCrl.isRevoked(makeThumbPrint(certificate));
+                }
+                if(revoked) {
                     log.error("Certificate has been revoked and can no longer be used: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
                     valid = false;
                 }
@@ -278,6 +274,29 @@ public class Certificate {
             certificateException.initCause(e);
             throw certificateException;
         }
+    }
+
+    static List<X509Certificate> parseCertificates(String in) throws CertificateException {
+        List<X509Certificate> certificates = new ArrayList<>();
+        JcaX509CertificateConverter converter = new JcaX509CertificateConverter().setProvider("BC");
+
+        try(PEMParser parser = new PEMParser(new StringReader(in))) {
+            Object object;
+            while((object = parser.readObject()) != null) {
+                if(!(object instanceof X509CertificateHolder)) {
+                    throw new CertificateException("Unsupported PEM object: " + object.getClass().getSimpleName());
+                }
+                certificates.add(converter.getCertificate((X509CertificateHolder)object));
+            }
+        }
+        catch(IOException e) {
+            throw new CertificateException(e);
+        }
+
+        if(certificates.isEmpty()) {
+            throw new CertificateException("No certificates found");
+        }
+        return certificates;
     }
 
     private void readRenewalInfo() throws Exception {

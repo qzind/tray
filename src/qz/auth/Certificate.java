@@ -256,9 +256,9 @@ public class Certificate {
             readRenewalInfo();
             CRL qzCrl = CRL.getInstance();
             if (qzCrl.isLoaded()) {
-                boolean revoked = qzCrl.isRevoked(getFingerprint());
-                for(X509Certificate intermediateCertificate : intermediateCertificates) {
-                    revoked |= qzCrl.isRevoked(makeThumbPrint(intermediateCertificate));
+                boolean revoked = false;
+                for(X509Certificate certificate : certificates) {
+                    revoked |= qzCrl.isRevoked(makeThumbPrint(certificate));
                 }
                 if(revoked) {
                     log.error("Certificate has been revoked and can no longer be used: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());

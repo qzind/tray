@@ -500,7 +500,6 @@ public class PrintOptions {
         private double rotation = 0;                                                //Image rotation
         private boolean scaleContent = true;                                        //Adjust paper size for best image fit
         private Size size = null;                                                   //Paper size
-        private boolean sizeInherited = false;                                      //Use PDF source page size
         private Unit units = Unit.INCH;                                             //Units for density, margins, size
 
 
@@ -637,6 +636,7 @@ public class PrintOptions {
             return custom;
         }
 
+        // TODO: Make Size parsing non-null
         public boolean isInherited() { return inherited; }
     }
 

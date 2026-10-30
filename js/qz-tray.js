@@ -1659,7 +1659,8 @@ var qz = (function() {
              *                                             Specifying <code>[options.density]</code> for PDF print formats will set this to <code>true</code>.
              *  @param {number} [options.rotation=0] Image rotation in degrees.
              *  @param {boolean} [options.scaleContent=true] Scales print content to page size, keeping ratio.
-             *  @param {Object} [options.size=null] Paper size.
+             *  @param {Object|string} [options.size=null] Paper size. For PDF, if <code>inherit</code> is specified, size information is read from the PDF page dimenions.
+             *                                             Inherited sizes ignore <code>size.width</code>, <code>size.height</code>, <code>options.units</code> but honor <code>options.margins</code>.
              *   @param {number} [options.size.width=null] Page width.
              *   @param {number} [options.size.height=null] Page height.
              *   @param {boolean} [options.size.custom=false] If the provided page size is not included in the driver.

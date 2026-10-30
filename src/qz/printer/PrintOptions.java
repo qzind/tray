@@ -368,6 +368,11 @@ public class PrintOptions {
                 } else {
                     psOptions.size = s;
                 }
+            } else if ("inherit".equals(configOpts.optString("size"))) {
+                switch(format) {
+                    case PDF -> psOptions.size = new Size(true);
+                    default -> log.warn("Page size 'inherit' is only supported for PDFs currently, using default");
+                }
             } else {
                 LoggerUtilities.optionWarn(log, "JSONObject", "size", configOpts.opt("size"));
             }
@@ -601,11 +606,16 @@ public class PrintOptions {
         private double width = -1;  //Page width
         private double height = -1; //Page height
         private boolean custom = false; //Force a custom size
+        private boolean inherited = false; //Force size to be inherited from content
 
         public Size() {}
 
         public Size(double width, double height) {
             this(width, height, false);
+        }
+
+        public Size(boolean inherited) {
+            this.inherited = inherited;
         }
 
         public Size(double width, double height, boolean custom) {
@@ -625,6 +635,9 @@ public class PrintOptions {
         public boolean isCustom() {
             return custom;
         }
+
+        // TODO: Make Size parsing non-null
+        public boolean isInherited() { return inherited; }
     }
 
     /** Pixel page margins options */

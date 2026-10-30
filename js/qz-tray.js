@@ -1660,7 +1660,7 @@ var qz = (function() {
              *  @param {number} [options.rotation=0] Image rotation in degrees.
              *  @param {boolean} [options.scaleContent=true] Scales print content to page size, keeping ratio.
              *  @param {Object|string} [options.size=null] Paper size. For PDF, use <code>inherit</code> to use each selected source page's MediaBox and UserUnit.
-             *                                              Inherited sizes ignore <code>options.units</code>, while configured margins are applied to each page.
+             *                                             Inherited sizes ignore <code>size.width</code>, <code>size.height</code>, <code>options.units</code> but honor <code>options.margins</code>.
              *   @param {number} [options.size.width=null] Page width.
              *   @param {number} [options.size.height=null] Page height.
              *   @param {boolean} [options.size.custom=false] If the provided page size is not included in the driver.

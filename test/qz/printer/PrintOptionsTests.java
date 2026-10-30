@@ -8,10 +8,10 @@ import qz.utils.PrintingUtilities;
 public class PrintOptionsTests {
     @Test
     public void testPdfInherit() throws Exception {
-        PrintOptions printOptions = createOptions("inherit", PrintingUtilities.Format.PDF);
+        PrintOptions printOptions = createSizeOptions("inherit", PrintingUtilities.Format.PDF);
 
-        Assert.assertTrue(printOptions.getPixelOptions().isSizeInherited());
-        Assert.assertNull(printOptions.getPixelOptions().getSize());
+        Assert.assertNotNull(printOptions.getPixelOptions().getSize());
+        Assert.assertTrue(printOptions.getPixelOptions().getSize().isInherited());
     }
 
     @Test
@@ -19,9 +19,9 @@ public class PrintOptionsTests {
         JSONObject size = new JSONObject()
                 .put("width", 4)
                 .put("height", 6);
-        PrintOptions printOptions = createOptions(size, PrintingUtilities.Format.PDF);
+        PrintOptions printOptions = createSizeOptions(size, PrintingUtilities.Format.PDF);
 
-        Assert.assertFalse(printOptions.getPixelOptions().isSizeInherited());
+        Assert.assertFalse(printOptions.getPixelOptions().getSize().isInherited());
         Assert.assertEquals(printOptions.getPixelOptions().getSize().getWidth(), 4.0);
         Assert.assertEquals(printOptions.getPixelOptions().getSize().getHeight(), 6.0);
     }
@@ -30,39 +30,37 @@ public class PrintOptionsTests {
     public void testNoSize() throws Exception {
         PrintOptions printOptions = new PrintOptions(new JSONObject(), new PrintOutput(null), PrintingUtilities.Format.PDF);
 
-        Assert.assertFalse(printOptions.getPixelOptions().isSizeInherited());
         Assert.assertNull(printOptions.getPixelOptions().getSize());
     }
 
     @Test
     public void testImageInherit() throws Exception {
-        PrintOptions printOptions = createOptions("inherit", PrintingUtilities.Format.IMAGE);
+        PrintOptions printOptions = createSizeOptions("inherit", PrintingUtilities.Format.IMAGE);
 
-        Assert.assertFalse(printOptions.getPixelOptions().isSizeInherited());
+        // size: "inherit" is PDF-only
         Assert.assertNull(printOptions.getPixelOptions().getSize());
     }
 
     @Test
     public void testCommandInherit() throws Exception {
-        PrintOptions printOptions = createOptions("inherit", PrintingUtilities.Format.COMMAND);
+        PrintOptions printOptions = createSizeOptions("inherit", PrintingUtilities.Format.COMMAND);
 
-        Assert.assertFalse(printOptions.getPixelOptions().isSizeInherited());
+        // size: "inherit" is PDF-only
         Assert.assertNull(printOptions.getPixelOptions().getSize());
     }
 
     @Test
     public void testUpperInherit() throws Exception {
-        PrintOptions printOptions = createOptions("INHERIT", PrintingUtilities.Format.PDF);
+        PrintOptions printOptions = createSizeOptions("INHERIT", PrintingUtilities.Format.PDF);
 
-        Assert.assertFalse(printOptions.getPixelOptions().isSizeInherited());
+        // size: "inherit" is case-sensitive
         Assert.assertNull(printOptions.getPixelOptions().getSize());
     }
 
     @Test
     public void testInvalidSize() throws Exception {
-        PrintOptions printOptions = createOptions("letter", PrintingUtilities.Format.PDF);
+        PrintOptions printOptions = createSizeOptions("letter", PrintingUtilities.Format.PDF);
 
-        Assert.assertFalse(printOptions.getPixelOptions().isSizeInherited());
         Assert.assertNull(printOptions.getPixelOptions().getSize());
     }
 
@@ -86,7 +84,7 @@ public class PrintOptionsTests {
         Assert.assertNotNull(printOptions.getRawOptions().getDestEncoding());
     }
 
-    private PrintOptions createOptions(Object size, PrintingUtilities.Format format) throws Exception {
+    private PrintOptions createSizeOptions(Object size, PrintingUtilities.Format format) throws Exception {
         JSONObject options = new JSONObject().put("size", size);
         return new PrintOptions(options, new PrintOutput(null), format);
     }

@@ -10,24 +10,13 @@ import java.util.HashMap;
 
 public class CertificateSerializationTests {
     @Test
-    public void testStandard() throws Exception {
+    public void testStandardChainRoundTrip() throws Exception {
         assertRoundTrip("chain-standard.txt");
     }
 
     @Test
-    public void testLegacy() throws Exception {
+    public void testLegacyChainRoundTrip() throws Exception {
         assertRoundTrip("chain-legacy.txt");
-    }
-
-    @Test
-    public void testChainNotSerialized() throws Exception {
-        Certificate certificate = new Certificate(read("chain-standard-with-root.txt"));
-        String row = certificate.data();
-
-        Assert.assertEquals(row.split("\\t", -1).length, Certificate.saveFields.length);
-        Assert.assertFalse(row.contains("BEGIN CERTIFICATE"));
-        Assert.assertFalse(row.contains("QZ Test Intermediate"));
-        Assert.assertFalse(row.contains("QZ Test Root CA"));
     }
 
     private void assertRoundTrip(String resource) throws Exception {

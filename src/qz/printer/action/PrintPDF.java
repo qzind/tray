@@ -228,8 +228,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null), (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
         if (pxlOpts.getSize() != null && pxlOpts.getSize().isInherited()) {
-            // A job-wide printable area would override
-            // the paper and margins assigned to each PDF page
+            // A job-wide printable area would override the paper and margins assigned to each PDF page
             attributes.remove(MediaPrintableArea.class);
         }
 

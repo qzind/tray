@@ -61,6 +61,14 @@ public class IconCacheTests {
     }
 
     @DataProvider
+    public Object[][] iconSize() {
+        return Arrays.stream(Icon.values())
+                .flatMap(icon -> Arrays.stream(icon.getType().getSizes())
+                        .mapToObj(size -> new Object[]{icon, size}))
+                .toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] iconTheme() {
         return Arrays.stream(Icon.values())
                 .flatMap(icon -> Arrays.stream(Theme.values())
@@ -115,6 +123,19 @@ public class IconCacheTests {
         Assert.assertTrue(png.toFile().exists());
 
         Assert.assertNotEquals(svg, png);
+    }
+
+    @Test(dataProvider = "iconSize")
+    public void testColorsDiffer(Icon icon, int size) {
+        if(!icon.isMaskIcon()) {
+            throw new SkipException("Skipping non-mask icon: " + icon);
+        }
+        Cache dark = svgCache.getCache(icon, Theme.DARK, size);
+        Cache light = svgCache.getCache(icon, Theme.LIGHT, size);
+        // Check BufferedImage
+        Assert.assertFalse(compareImages(dark.getBufferedImage(), light.getBufferedImage()));
+        // Check ImageIcon
+        Assert.assertFalse(compareImages((BufferedImage)dark.getImageIcon().getImage(), (BufferedImage)light.getImageIcon().getImage()));
     }
 
     @Test(dataProvider = "iconSizeTheme", priority = 5)

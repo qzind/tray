@@ -18,7 +18,9 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -40,7 +42,7 @@ public class NetworkUtilities {
     private String hostname;
     private int port;
 
-    private ArrayList<Device> devices;
+    private List<Device> devices;
     private Device primaryDevice;
     private IOException primaryException;
 
@@ -85,19 +87,18 @@ public class NetworkUtilities {
         throw instance.primaryException;
     }
 
-    private ArrayList<Device> gatherDevices() throws SocketException {
+    private synchronized List<Device> gatherDevices() throws SocketException {
         if (devices == null) {
-            devices = new ArrayList<>();
+            List<Device> deviceList = new ArrayList<>();
 
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while(interfaces.hasMoreElements()) {
-                NetworkInterface iface = interfaces.nextElement();
+            for(NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                Device device = new Device(iface);
+                device.primary = device.equals(primaryDevice);
 
-                Device next = new Device(iface);
-                next.primary = next.equals(primaryDevice);
-
-                devices.add(next);
+                deviceList.add(device);
             }
+
+            devices = List.copyOf(deviceList);
         }
 
         return devices;

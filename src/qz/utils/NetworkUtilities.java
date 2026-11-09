@@ -47,7 +47,7 @@ public class NetworkUtilities {
     private IOException primaryException;
 
 
-    NetworkUtilities(String hostname, int port) {
+    private NetworkUtilities(String hostname, int port) {
         try {
             this.hostname = hostname;
             this.port = port;
@@ -68,14 +68,9 @@ public class NetworkUtilities {
     }
 
     public static JSONArray getDevicesJSON(JSONObject params) throws JSONException, IOException {
-        return getInstance(params.optString("hostname", defaultHostname),
-                           params.optInt("port", defaultPort)).getDevicesJSON();
-    }
-
-    JSONArray getDevicesJSON() throws JSONException, IOException {
         JSONArray network = new JSONArray();
-
-        for(Device device : gatherDevices()) {
+        for(Device device : getInstance(params.optString("hostname", defaultHostname),
+                                        params.optInt("port", defaultPort)).gatherDevices()) {
             network.put(device.toJSON());
         }
         return network;
@@ -95,21 +90,17 @@ public class NetworkUtilities {
         if (devices == null) {
             List<Device> deviceList = new ArrayList<>();
 
-            for(NetworkInterface iface : getNetworkInterfaces()) {
-                Device next = new Device(iface);
-                next.primary = next.equals(primaryDevice);
+            for(NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                Device device = new Device(iface);
+                device.primary = device.equals(primaryDevice);
 
-                deviceList.add(next);
+                deviceList.add(device);
             }
 
             devices = List.copyOf(deviceList);
         }
 
         return devices;
-    }
-
-    List<NetworkInterface> getNetworkInterfaces() throws SocketException {
-        return Collections.list(NetworkInterface.getNetworkInterfaces());
     }
 
     private static InetAddress getPrimaryInetAddress(String hostname, int port) throws IOException {

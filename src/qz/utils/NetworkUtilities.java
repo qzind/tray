@@ -69,6 +69,7 @@ public class NetworkUtilities {
 
     public static JSONArray getDevicesJSON(JSONObject params) throws JSONException, IOException {
         JSONArray network = new JSONArray();
+
         for(Device device : getInstance(params.optString("hostname", defaultHostname),
                                         params.optInt("port", defaultPort)).gatherDevices()) {
             network.put(device.toJSON());

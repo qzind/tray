@@ -205,6 +205,7 @@ public class WebApp extends Application {
                 }
             }
 
+            JpegOrientationLoaderFactory.register();
             new Thread(() -> Application.launch(WebApp.class)).start();
         }
 

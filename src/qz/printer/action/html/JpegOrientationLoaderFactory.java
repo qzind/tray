@@ -83,6 +83,7 @@ final class JpegOrientationLoaderFactory implements ImageLoaderFactory {
         return NORMAL_ORIENTATION;
     }
 
+    @SuppressWarnings("SuspiciousNameCombination")
     static ImageFrame transform(ImageFrame frame, int orientation) {
         if (orientation == NORMAL_ORIENTATION || !(frame.getImageData() instanceof ByteBuffer source)) {
             return frame;
@@ -177,15 +178,7 @@ final class JpegOrientationLoaderFactory implements ImageLoaderFactory {
         return orientation >= 5 && orientation <= 8;
     }
 
-    private static final class JpegOrientationLoader implements ImageLoader {
-        private final ImageLoader delegate;
-        private final int orientation;
-
-        private JpegOrientationLoader(ImageLoader delegate, int orientation) {
-            this.delegate = delegate;
-            this.orientation = orientation;
-        }
-
+    private record JpegOrientationLoader(ImageLoader delegate, int orientation) implements ImageLoader {
         @Override
         public ImageFormatDescription getFormatDescription() {
             return delegate.getFormatDescription();
@@ -210,11 +203,11 @@ final class JpegOrientationLoaderFactory implements ImageLoaderFactory {
         public ImageFrame load(int imageIndex, double width, double height,
                                boolean preserveAspectRatio, boolean smooth,
                                float screenPixelScale, float imagePixelScale) throws IOException {
-            double delegatedWidth = swapsDimensions(orientation) ? height : width;
-            double delegatedHeight = swapsDimensions(orientation) ? width : height;
+            double delegatedWidth = swapsDimensions(orientation)? height:width;
+            double delegatedHeight = swapsDimensions(orientation)? width:height;
             ImageFrame frame = delegate.load(imageIndex, delegatedWidth, delegatedHeight,
-                    preserveAspectRatio, smooth, screenPixelScale, imagePixelScale);
-            return frame == null ? null : transform(frame, orientation);
+                                             preserveAspectRatio, smooth, screenPixelScale, imagePixelScale);
+            return frame == null? null:transform(frame, orientation);
         }
     }
 }

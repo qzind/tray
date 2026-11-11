@@ -116,8 +116,8 @@ final class JpegOrientationLoaderFactory implements ImageLoaderFactory {
                 switch (orientation.degrees) {
                     case 90  -> { targetX = sourceHeight - 1 - y; targetY = x; }
                     case 180 -> { targetX = sourceWidth - 1 - x;  targetY = sourceHeight - 1 - y; }
-                    case 270 -> { targetX = y;                 targetY = sourceWidth - 1 - x; }
-                    default  -> { targetX = x;                 targetY = y; }
+                    case 270 -> { targetX = y; targetY = sourceWidth - 1 - x; }
+                    default  -> { targetX = x; targetY = y; }
                 }
 
                 if (orientation.isMirrored) {

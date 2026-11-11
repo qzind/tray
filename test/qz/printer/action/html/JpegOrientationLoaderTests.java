@@ -19,16 +19,16 @@ public class JpegOrientationLoaderTests {
     @DataProvider
     public Object[][] images() {
         return new Object[][] {
-                {"orientation-1.jpg", 120, 80, new String[] {"red", "green", "yellow", "blue"}},
-                {"orientation-2.jpg", 120, 80, new String[] {"green", "red", "blue", "yellow"}},
-                {"orientation-3.jpg", 120, 80, new String[] {"blue", "yellow", "green", "red"}},
-                {"orientation-4.jpg", 120, 80, new String[] {"yellow", "blue", "red", "green"}},
-                {"orientation-5.jpg", 80, 120, new String[] {"red", "yellow", "green", "blue"}},
-                {"orientation-6.jpg", 80, 120, new String[] {"yellow", "red", "blue", "green"}},
-                {"orientation-7.jpg", 80, 120, new String[] {"blue", "green", "yellow", "red"}},
-                {"orientation-8.jpg", 80, 120, new String[] {"green", "blue", "red", "yellow"}},
-                {"orientation-none.jpg", 120, 80, new String[] {"red", "green", "yellow", "blue"}},
-                {"orientation-malformed.jpg", 120, 80, new String[] {"red", "green", "yellow", "blue"}}
+                {"normal.jpg", 120, 80, new String[] {"red", "green", "yellow", "blue"}},
+                {"flip-horizontal.jpg", 120, 80, new String[] {"green", "red", "blue", "yellow"}},
+                {"rotate-180.jpg", 120, 80, new String[] {"blue", "yellow", "green", "red"}},
+                {"flip-vertical.jpg", 120, 80, new String[] {"yellow", "blue", "red", "green"}},
+                {"transpose.jpg", 80, 120, new String[] {"red", "yellow", "green", "blue"}},
+                {"rotate-90.jpg", 80, 120, new String[] {"yellow", "red", "blue", "green"}},
+                {"transverse.jpg", 80, 120, new String[] {"blue", "green", "yellow", "red"}},
+                {"rotate-270.jpg", 80, 120, new String[] {"green", "blue", "red", "yellow"}},
+                {"none.jpg", 120, 80, new String[] {"red", "green", "yellow", "blue"}},
+                {"malformed.jpg", 120, 80, new String[] {"red", "green", "yellow", "blue"}}
         };
     }
 

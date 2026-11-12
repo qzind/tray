@@ -37,6 +37,7 @@ public class CertificateSerializationTests {
     }
 
     private Certificate load(String row) {
+        // TODO: Add coverage for allowed.dat, blocked.dat  
         String[] values = row.split("\\t", -1);
         HashMap<String,String> data = new HashMap<>();
 

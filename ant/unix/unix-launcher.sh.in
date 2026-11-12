@@ -111,17 +111,27 @@ else
 fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
+    JAR_DIR="$DIR/../Resources"
+    JAR_LOC="$JAR_DIR/${prefix}$PROPS_FILE.jar" # TODO: What is ${prefix} for?
     LAUNCH_OPTS="$LAUNCH_OPTS ${apple.launch.opts}"
 else
+    JAR_DIR="$DIR"
+    JAR_LOC="$JAR_DIR/$PROPS_FILE.jar"
     LAUNCH_OPTS="$LAUNCH_OPTS ${linux.launch.opts}"
+fi
+
+# Add javaagent flag, if present
+# FIXME:  This is currently broken
+if [ -n "${custom.launch.agent}" ]; then
+    LAUNCH_OPTS="$LAUNCH_OPTS -javaagent:\"$JAR_DIR/agent/${apple.launch.agent}\""
 fi
 
 if command -v java &>/dev/null; then
     echo -e "$ABOUT_TITLE is starting..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$DIR/../Resources/$PROPS_FILE.icns" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="${java.mask.tray}" -Dapple.awt.application.appearance="system" "$DIR/../Resources/${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$JAR_DIR/$PROPS_FILE.icns" -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="${java.mask.tray}" -Dapple.awt.application.appearance="system" -jar "$JAR_LOC" -NSRequiresAquaSystemAppearance False "$@"
     else
-        java $LAUNCH_OPTS -jar "$PROPS_FILE.jar" "$@"
+        java $LAUNCH_OPTS -jar "$JAR_LOC" "$@"
     fi
 else
     echo -e "$FAILURE Java $JAVA_MIN+ was not found"

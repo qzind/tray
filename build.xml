@@ -21,7 +21,7 @@
     <!-- Fixes some odd empty directory issues -->
     <defaultexcludes remove="**/.DS_Store"/>
 
-    <target name="distribute" depends="init,quick-clean,build-jar,override-authcert,build-demo,whitelist-certs">
+    <target name="distribute" depends="init,quick-clean,build-jar,override-authcert,copy-launch-agent,build-demo,whitelist-certs">
         <echo level="info">Process complete</echo>
     </target>
 
@@ -184,6 +184,34 @@
         </delete>
     </target>
 
+    <!-- Launch agent to bundle.  (e.g. -javaagent:foo.jar) using JVM bytecode injection -->
+    <target name="calculate-launch-agent">
+        <property name="apple.launch.agent" value="jdk-8041911.jar"/>
+        <property name="linux.launch.agent" value="jdk-8041911.jar"/>
+        <property name="windows.launch.agent" value=""/>
+
+        <condition property="custom.launch.agent" value="${apple.launch.agent}">
+            <equals arg1="${target.os}" arg2="mac"/>
+        </condition>
+        <condition property="custom.launch.agent" value="${linux.launch.agent}">
+            <equals arg1="${target.os}" arg2="linux"/>
+        </condition>
+        <condition property="custom.launch.agent" value="${windows.launch.agent}">
+            <equals arg1="${target.os}" arg2="windows"/>
+        </condition>
+        <property description="fallback value" name="custom.launch.agent" value=""/>
+
+        <condition property="launchagent.use" value="true">
+            <not>
+                <equals arg1="${custom.launch.agent}" arg2=""/>
+            </not>
+        </condition>
+    </target>
+
+    <target name="copy-launch-agent" if="launchagent.use" depends="calculate-launch-agent">
+        <copy file="deps/agent/${custom.launch.agent}" tofile="${dist.dir}/agent/${custom.launch.agent}" overwrite="true" failonerror="true"/>
+    </target>
+
     <target name="copy-libs">
         <!-- Calculate usable javafx exclude value -->
         <condition property="host.javafx.exclude" value="this-will-never-match">
@@ -198,6 +226,8 @@
                 <include name="**/*.jar"/>
                 <!-- Excludes host javafx natives if cross-compiling -->
                 <exclude name="**/javafx-${host.javafx.exclude}*.jar"/>
+                <!-- Exclude launch agents -->
+                <exclude name="**/agent/*.jar"/>
             </fileset>
         </unzip>
 

@@ -103,16 +103,14 @@ public class CertificateTests {
     @Test
     public void testTrustedChains() throws Exception {
         assertTrust(read("leaf-direct.crt"), true);
-        assertTrust(read("leaf-legacy.crt") + read("ca-intermediate-one.crt"),
-                true);
+        assertTrust(read("leaf-legacy.crt") + read("ca-intermediate-one.crt"), true);
         assertTrust(read("chain-standard.txt"), true);
     }
 
     @Test
     public void testUntrustedChains() throws Exception {
         assertTrust(read("leaf-direct.crt"), "ca-unrelated.crt", false);
-        assertTrust(read("leaf-legacy.crt") + read("ca-intermediate-one.crt"),
-                "ca-unrelated.crt", false);
+        assertTrust(read("leaf-legacy.crt") + read("ca-intermediate-one.crt"), "ca-unrelated.crt", false);
         assertTrust(read("chain-standard.txt"), "ca-unrelated.crt", false);
     }
 
@@ -133,20 +131,19 @@ public class CertificateTests {
 
     @Test
     public void testReversedChain() throws Exception {
-        String bundle = read("ca-intermediate-one.crt")
-                + read("ca-intermediate-two.crt") + read("leaf-standard.crt");
+        String bundle = read("ca-intermediate-one.crt") +
+                read("ca-intermediate-two.crt") +
+                read("leaf-standard.crt");
 
         // Cursed current behavior: the first cert becomes the signing identity
         // This reversed bundle validates the intermediate by accident and may be rejected later
-        Assert.assertEquals(commonName(Certificate.parseCertificates(bundle).getFirst()),
-                "QZ Test Intermediate One");
+        Assert.assertEquals(commonName(Certificate.parseCertificates(bundle).getFirst()), "QZ Test Intermediate One");
         assertTrust(bundle, true);
     }
 
     @Test
     public void testIncomplete() throws Exception {
-        assertTrust(read("leaf-standard.crt") + read("ca-intermediate-two.crt"),
-                false);
+        assertTrust(read("leaf-standard.crt") + read("ca-intermediate-two.crt"), false);
     }
 
     @Test
@@ -156,10 +153,8 @@ public class CertificateTests {
 
     @Test
     public void testUnrelated() throws Exception {
-        assertTrust(read("leaf-standard.crt") + read("ca-unrelated.crt"),
-                false);
-        assertTrust(read("chain-standard.txt") + read("ca-unrelated.crt"),
-                true);
+        assertTrust(read("leaf-standard.crt") + read("ca-unrelated.crt"), false);
+        assertTrust(read("chain-standard.txt") + read("ca-unrelated.crt"), true);
     }
 
     private void assertNames(String resource, String... expectedCns) throws Exception {
@@ -171,8 +166,7 @@ public class CertificateTests {
         }
     }
 
-    private void assertTrust(String certificateData, String rootResource,
-                             boolean trustExpected) throws Exception {
+    private void assertTrust(String certificateData, String rootResource, boolean trustExpected) throws Exception {
         List<Certificate> previousRoots = new ArrayList<>(Certificate.rootCAs);
         Certificate previousBuiltIn = Certificate.builtIn;
 

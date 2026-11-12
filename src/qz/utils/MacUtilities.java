@@ -112,12 +112,6 @@ public class MacUtilities {
         }
     }
 
-    public static int getScaleFactor() {
-        GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        GraphicsConfiguration graphicsConfig = graphicsDevice.getDefaultConfiguration();
-        return (int)graphicsConfig.getDefaultTransform().getScaleX();
-    }
-
     /**
      * The human-readable display version of the Mac
      */

@@ -944,14 +944,13 @@ var qz = (function() {
         compatible: {
             /** Converts standard certificate chains for previous versions */
             certificate: function(cert) {
-                var marker = "--START INTERMEDIATE CERT--";
-                var boundary = /(-----END CERTIFICATE-----)(\s+)(?=-----BEGIN CERTIFICATE-----)/;
+                var legacyDelimiter = "--START INTERMEDIATE CERT--";
 
-                if (_qz.tools.versionCompare(2, 3, 1) >= 0 || typeof cert !== "string" || cert.indexOf(marker) >= 0) {
+                if (typeof cert !== "string" || _qz.tools.versionCompare(2, 3, 1) >= 0 || cert.indexOf(legacyDelimiter) >= 0) {
                     return cert;
                 }
 
-                return cert.replace(boundary, "$1$2" + marker + "$2");
+                return cert.replace(/(-----END CERTIFICATE-----)(\s+)(?=-----BEGIN CERTIFICATE-----)/, "$1$2" + legacyDelimiter + "$2");
             },
 
             /** Converts message format to a previous version's */

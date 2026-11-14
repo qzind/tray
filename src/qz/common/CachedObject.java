@@ -74,7 +74,7 @@ public class CachedObject<T> {
      * @param forceRefresh If true, the cached object will be refreshed before being returned regardless of its lifespan
      * @return The cached object
      */
-    public T get(boolean forceRefresh) {
+    public synchronized T get(boolean forceRefresh) {
         long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         // check lifespan
         if (forceRefresh || (timestamp + lifespan <= now)) {

@@ -42,4 +42,10 @@ public class WindowsUtilitiesTests {
         Assert.assertEquals(getCharsetFromCodePage(1252), Charset.forName("cp1252")); // Windows Latin-1
         Assert.assertEquals(getCharsetFromCodePage(1253), Charset.forName("cp1253")); // Windows Greek
     }
+
+    @Test
+    public void testFindPidsWmic() {
+        Assert.assertEquals(WindowsUtilities.findPidsWmic("fake-process.exe").size(), 0);
+        Assert.assertNotEquals(WindowsUtilities.findPidsWmic("java.exe").size(), 0);
+    }
 }

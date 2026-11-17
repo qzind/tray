@@ -1,5 +1,6 @@
 package qz.utils;
 
+import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
@@ -46,7 +47,7 @@ public class WindowsUtilitiesTests {
     @Test
     public void testFindPidsWmic() {
         // Windows 10 and older only
-        if(WindowsUtilities.getOsVersion().majorVersion() > 10) {
+        if(WindowsUtilities.getOsVersion().isHigherThanOrEquivalentTo(Version.parse("10.0.22000"))) {
             throw new SkipException("WMIC is missing from this Operating System");
         }
 

@@ -206,7 +206,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         this.detailColor = request.isVerified() ? Constants.TRUSTED_COLOR : Constants.WARNING_COLOR;
 
         // Block confirmation dialog
-        this.confirmBlockText = String.format(Constants.BLOCK_SITES_TEXT.replace(" blocked ", " block ") + "?",
+        this.confirmBlockText = String.format(Constants.BLOCK_SITES_CONFIRM,
                                               request.hasCertificate() ?
                                                               request.getCertName() : "");
 

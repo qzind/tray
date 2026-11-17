@@ -66,6 +66,9 @@ public class Constants {
     public static final String ALLOW_SITES_TEXT = "Permanently allowed \"%s\" to access local resources";
     public static final String BLOCK_SITES_TEXT = "Permanently blocked \"%s\" from accessing local resources";
 
+    // Declared in full rather than derived from BLOCK_SITES_TEXT, which relied on English word spacing
+    public static final String BLOCK_SITES_CONFIRM = "Permanently block \"%s\" from accessing local resources?";
+
     public static final String REMEMBER_THIS_DECISION = "Remember this decision";
     public static final String STRICT_MODE_LABEL = "Use strict certificate mode";
     public static final String STRICT_MODE_TOOLTIP = String.format("Prevents the ability to select \"%s\" for most websites", REMEMBER_THIS_DECISION);

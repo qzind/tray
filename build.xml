@@ -210,6 +210,9 @@
 
     <target name="copy-launch-agent" if="launchagent.use" depends="calculate-launch-agent">
         <copy file="deps/agent/${custom.launch.agent}" tofile="${dist.dir}/agent/${custom.launch.agent}" overwrite="true" failonerror="true"/>
+        <antcall target="sign-jar">
+            <param name="sign.file" value="${dist.dir}/agent/${custom.launch.agent}"/>
+        </antcall>
     </target>
 
     <target name="copy-libs">

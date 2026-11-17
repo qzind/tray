@@ -45,7 +45,12 @@ public class WindowsUtilitiesTests {
 
     @Test
     public void testFindPidsWmic() {
-        Assert.assertEquals(WindowsUtilities.findPidsWmic("fake-process.exe").size(), 0);
+        // Windows 10 and older only
+        if(WindowsUtilities.getOsVersion().majorVersion() > 10) {
+            throw new SkipException("WMIC is missing from this Operating System");
+        }
+
+        Assert.assertEquals(WindowsUtilities.findPidsWmic("fake-process").size(), 0);
         Assert.assertNotEquals(WindowsUtilities.findPidsWmic("java.exe").size(), 0);
     }
 }

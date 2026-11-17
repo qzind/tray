@@ -122,7 +122,7 @@ fi
 
 # Add javaagent flag, if present
 if [ -n "${custom.launch.agent}" ]; then
-    LAUNCH_AGENT="-javaagent:$JAR_DIR/agent/${apple.launch.agent}"
+    LAUNCH_AGENT="-javaagent:$JAR_DIR/agent/${custom.launch.agent}"
 fi
 
 if command -v java &>/dev/null; then

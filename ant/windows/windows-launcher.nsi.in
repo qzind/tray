@@ -56,6 +56,13 @@ Section
     Var /GLOBAL opts
     StrCpy $opts "${launch.opts} ${windows.launch.opts}"
 
+    Var /GLOBAL agent
+    ; Add javaagent flag, if present
+    StrCpy $agent ""
+    ${If} "${custom.launch.agent}" != ""
+        StrCpy $agent '"-javaagent:$EXEDIR\agent\${custom.launch.agent}"'
+    ${EndIf}
+
     ; Check for user overridable launch options
     ClearErrors
     ReadEnvStr $R0 ${launch.overrides}
@@ -63,7 +70,7 @@ Section
     StrCpy $opts "$opts $R0"
 
     Var /GLOBAL command
-    StrCpy $command '"$javaw" $opts -jar "${JAR}" $params'
+    StrCpy $command '"$javaw" $opts $agent -jar "${JAR}" $params'
 
     ; If ends in "-console.exe", use "cmd /s /k" to launch
     ${StrLoc} $R1 "${nsis.outfile}" "-console.exe" "<"

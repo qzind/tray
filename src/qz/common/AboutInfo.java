@@ -71,7 +71,7 @@ public class AboutInfo {
 
     private static JSONObject socket(CertificateManager certificateManager, String domain) throws JSONException {
         JSONObject socket = new JSONObject();
-        String sanitizeDomain = StringUtilities.escapeHtmlEntities(domain);
+        String sanitizeDomain = StringUtilities.escapeDomainEntities(domain);
         WebsocketPorts websocketPorts = PrintSocketServer.getWebsocketPorts();
 
         // Gracefully handle XSS per https://github.com/qzind/tray/issues/1099

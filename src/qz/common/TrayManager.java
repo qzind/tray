@@ -638,7 +638,7 @@ public class TrayManager {
         return PrefsSearch.getBoolean(argValue, getUserPrefs(), getTrayProperties()) ;
     }
 
-    private void performIfIdle(int idleQualifier, ActionListener performer) {
+    private synchronized void performIfIdle(int idleQualifier, ActionListener performer) {
         if (idleTimer != null) {
             idleTimer.schedule(new TimerTask() {
                 @Override
@@ -651,7 +651,7 @@ public class TrayManager {
         }
     }
 
-    public void voidIdleActions() {
+    public synchronized void voidIdleActions() {
         if (idleTimer != null) {
             log.trace("Not idle, stopping any actions that haven't ran yet");
             idleTimer.cancel();

@@ -433,6 +433,7 @@ var qz = (function() {
                             //algorithm can be declared before a connection, check for incompatibilities now that we have one
                             _qz.compatible.algorithm(true);
                         }).then(function() {
+                            cert = _qz.compatible.certificate(cert);
                             _qz.websocket.connection.sendData({ certificate: cert, promise: openPromise });
                         });
                     }
@@ -941,6 +942,17 @@ var qz = (function() {
         },
 
         compatible: {
+            /** Converts standard certificate chains for previous versions */
+            certificate: function(cert) {
+                var legacyDelimiter = "--START INTERMEDIATE CERT--";
+
+                if (typeof cert !== "string" || _qz.tools.versionCompare(2, 3, 1) >= 0 || cert.indexOf(legacyDelimiter) >= 0) {
+                    return cert;
+                }
+
+                return cert.replace(/(-----END CERTIFICATE-----)(\s+)(?=-----BEGIN CERTIFICATE-----)/, "$1$2" + legacyDelimiter + "$2");
+            },
+
             /** Converts message format to a previous version's */
             data: function(printData) {
                 // special handling for Uint8Array

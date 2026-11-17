@@ -121,17 +121,16 @@ else
 fi
 
 # Add javaagent flag, if present
-# FIXME:  This is currently broken
 if [ -n "${custom.launch.agent}" ]; then
-    LAUNCH_OPTS="$LAUNCH_OPTS -javaagent:\"$JAR_DIR/agent/${apple.launch.agent}\""
+    LAUNCH_AGENT="-javaagent:$JAR_DIR/agent/${apple.launch.agent}"
 fi
 
 if command -v java &>/dev/null; then
     echo -e "$ABOUT_TITLE is starting..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$JAR_DIR/$PROPS_FILE.icns" -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="${java.mask.tray}" -Dapple.awt.application.appearance="system" -jar "$JAR_LOC" -NSRequiresAquaSystemAppearance False "$@"
+        java $LAUNCH_OPTS ${LAUNCH_AGENT:+"$LAUNCH_AGENT"} -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$JAR_DIR/$PROPS_FILE.icns" -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="${java.mask.tray}" -Dapple.awt.application.appearance="system" -jar "$JAR_LOC" -NSRequiresAquaSystemAppearance False "$@"
     else
-        java $LAUNCH_OPTS -jar "$JAR_LOC" "$@"
+        java $LAUNCH_OPTS ${LAUNCH_AGENT:+"$LAUNCH_AGENT"} -jar "$JAR_LOC" "$@"
     fi
 else
     echo -e "$FAILURE Java $JAVA_MIN+ was not found"

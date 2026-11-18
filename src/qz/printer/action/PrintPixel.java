@@ -5,6 +5,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
+import qz.App;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -19,6 +20,7 @@ import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
 import java.awt.print.PageFormat;
 import java.awt.print.Paper;
+import java.awt.print.PrinterAbortException;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.IOException;
@@ -116,10 +118,11 @@ public abstract class PrintPixel {
 
 
     protected void printCopies(PrintOutput output, PrintOptions.Pixel pxlOpts, PrinterJob job, PrintRequestAttributeSet attributes) throws PrinterException {
-        log.info("Starting printing ({} copies)", pxlOpts.getCopies());
+        int copies = getEffectiveCopies(pxlOpts, attributes);
+        log.info("Starting printing ({} copies)", copies);
 
         PrinterResolution rUsing = (PrinterResolution)attributes.get(PrinterResolution.class);
-        if (rUsing != null) {
+        if (rUsing != null && !pxlOpts.isShowDialog()) {
             List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
             if (!rSupport.isEmpty()) {
                 if (!rSupport.contains(rUsing)) {
@@ -131,16 +134,50 @@ public abstract class PrintPixel {
             }
         }
 
+        if (pxlOpts.isShowDialog()) {
+            job.print(attributes);
+            return;
+        }
+
         CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
                 .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], attributes);
 
-        if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
-            attributes.add(new Copies(pxlOpts.getCopies()));
+        if (cSupport != null && cSupport.contains(copies)) {
+            attributes.add(new Copies(copies));
             job.print(attributes);
         } else {
-            for(int i = 0; i < pxlOpts.getCopies(); i++) {
+            for(int i = 0; i < copies; i++) {
                 job.print(attributes);
             }
+        }
+    }
+
+    protected void showPrintDialog(PrintOptions.Pixel pxlOpts, PrinterJob job, PrintRequestAttributeSet attributes) throws PrinterException {
+        if (!pxlOpts.isShowDialog()) {
+            return;
+        }
+        if (App.isHeadless() || GraphicsEnvironment.isHeadless()) {
+            throw new PrinterException("Print dialog is unavailable in headless mode");
+        }
+
+        attributes.add(new Copies(pxlOpts.getCopies()));
+        attributes.add(DialogTypeSelection.NATIVE);
+        checkDialog(job.printDialog(attributes));
+    }
+
+    static int getEffectiveCopies(PrintOptions.Pixel pxlOpts, PrintRequestAttributeSet attributes) {
+        if (pxlOpts.isShowDialog()) {
+            Copies accepted = (Copies)attributes.get(Copies.class);
+            if (accepted != null) {
+                return accepted.getValue();
+            }
+        }
+        return pxlOpts.getCopies();
+    }
+
+    static void checkDialog(boolean accepted) throws PrinterAbortException {
+        if (!accepted) {
+            throw new PrinterAbortException();
         }
     }
 

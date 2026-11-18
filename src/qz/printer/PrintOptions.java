@@ -345,6 +345,13 @@ public class PrintOptions {
             try { psOptions.scaleContent = configOpts.getBoolean("scaleContent"); }
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "scaleContent", configOpts.opt("scaleContent")); }
         }
+        if (!configOpts.isNull("showDialog")) {
+            try { psOptions.showDialog = configOpts.getBoolean("showDialog"); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "showDialog", configOpts.opt("showDialog")); }
+        }
+        if (psOptions.showDialog && (format == PrintingUtilities.Format.COMMAND || format == PrintingUtilities.Format.DIRECT)) {
+            throw new UnsupportedOperationException("Print dialogs are not supported for raw printing");
+        }
         if (!configOpts.isNull("size")) {
             Size s = new Size();
             JSONObject subSize = configOpts.optJSONObject("size");
@@ -499,6 +506,7 @@ public class PrintOptions {
         private boolean rasterize = true;                                           //Whether documents are rasterized before printing
         private double rotation = 0;                                                //Image rotation
         private boolean scaleContent = true;                                        //Adjust paper size for best image fit
+        private boolean showDialog = false;                                         //Show platform print dialog
         private Size size = null;                                                   //Paper size
         private Unit units = Unit.INCH;                                             //Units for density, margins, size
 
@@ -573,6 +581,10 @@ public class PrintOptions {
 
         public boolean isScaleContent() {
             return scaleContent;
+        }
+
+        public boolean isShowDialog() {
+            return showDialog;
         }
 
         public Size getSize() {

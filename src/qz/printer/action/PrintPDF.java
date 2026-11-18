@@ -237,6 +237,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             log.warn("MacOS and Java < 1.8.0u202 cannot use attributes with PDF prints, disabling");
             attributes.clear();
         }
+        showPrintDialog(pxlOpts, job, attributes);
 
         RenderingHints hints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
         double useDensity = pxlOpts.getDensity();
@@ -254,11 +255,16 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         BookBundle bundle = new BookBundle();
 
         for(PDDocument doc : printables) {
-            PageFormat page = job.getPageFormat(null);
-            if (pxlOpts.getSize() != null && pxlOpts.getSize().isInherited()) {
-                applyInheritedSize(page, doc.getPage(0));
+            PageFormat page;
+            if (pxlOpts.isShowDialog()) {
+                page = job.getPageFormat(attributes);
+            } else {
+                page = job.getPageFormat(null);
+                if (pxlOpts.getSize() != null && pxlOpts.getSize().isInherited()) {
+                    applyInheritedSize(page, doc.getPage(0));
+                }
+                applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
             }
-            applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
             //trick pdfbox into an alternate doc size if specified
             if (docWidth > 0 || docHeight > 0) {
@@ -281,13 +287,13 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     rotatePage(doc, pd, pxlOpts.getRotation());
                 }
 
-                if (pxlOpts.getOrientation() == null) {
+                if (!pxlOpts.isShowDialog() && pxlOpts.getOrientation() == null) {
                     PDRectangle bounds = pd.getBBox();
                     if ((page.getImageableHeight() > page.getImageableWidth() && bounds.getWidth() > bounds.getHeight()) ^ (pd.getRotation() / 90) % 2 == 1) {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
                     }
-                } else if (pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                } else if (!pxlOpts.isShowDialog() && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
                     //flip imageable area dimensions when in landscape
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
@@ -302,7 +308,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             PDFWrapper wrapper = new PDFWrapper(doc, scale, false, ignoreTransparency, altFontRendering,
                                                 (float)(useDensity * pxlOpts.getUnits().as1Inch()),
-                                                false, pxlOpts.getOrientation(), hints);
+                                                false, pxlOpts.isShowDialog() ? null : pxlOpts.getOrientation(), hints);
 
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }

@@ -651,12 +651,14 @@ public class WindowsUtilities {
     static HashSet<Integer> findPidsWmic(String ... commandMatches) {
         HashSet<Integer> foundPids = new HashSet<>();
         for(String jarName : commandMatches) {
-            String[] wmicQuery = WMIC_QUERY;
+            String[] wmicQuery = Arrays.copyOf(WMIC_QUERY, WMIC_QUERY.length);
             // Format the 3rd element to contain the jarName
             wmicQuery[3] = String.format(wmicQuery[3], jarName);
             String stdout = ShellUtilities.executeRaw(wmicQuery);
             String[] procs = stdout.split("\\s*\\r?\\n");
-            for(String proc : procs) {
+            // Skip first line i.e. "ProcessId"
+            for(int i = 1; i < procs.length; i++) {
+                String proc = procs[i];
                 int pid = parsePid(proc);
                 if (pid >= 0) {
                     foundPids.add(pid);

@@ -1,5 +1,6 @@
 package qz.utils;
 
+import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
@@ -41,5 +42,16 @@ public class WindowsUtilitiesTests {
         Assert.assertEquals(getCharsetFromCodePage(950), Charset.forName("windows-950")); // Windows Traditional Chinese
         Assert.assertEquals(getCharsetFromCodePage(1252), Charset.forName("cp1252")); // Windows Latin-1
         Assert.assertEquals(getCharsetFromCodePage(1253), Charset.forName("cp1253")); // Windows Greek
+    }
+
+    @Test
+    public void testFindPidsWmic() {
+        // Windows 10 and older only
+        if(WindowsUtilities.getOsVersion().isHigherThanOrEquivalentTo(Version.parse("10.0.22000"))) {
+            throw new SkipException("WMIC is missing from this Operating System");
+        }
+
+        Assert.assertEquals(WindowsUtilities.findPidsWmic("fake-process").size(), 0);
+        Assert.assertNotEquals(WindowsUtilities.findPidsWmic("java.exe").size(), 0);
     }
 }

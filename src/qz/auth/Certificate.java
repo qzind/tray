@@ -516,11 +516,6 @@ public class Certificate {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Certificate) {
-            String data1 = ((Certificate)obj).data(true);
-            String data2 = data(true);
-            
-            System.err.println(data1 + "\n" + data2);
-            
             return ((Certificate)obj).data(true).equals(data(true));
         }
         return super.equals(obj);

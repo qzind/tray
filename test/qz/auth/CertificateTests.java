@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class CertificateTests {
@@ -34,16 +35,16 @@ public class CertificateTests {
     public void testSingle() throws Exception {
         String certificateData = read("leaf-direct.crt");
         List<X509Certificate> certificates = Certificate.parseCertificates(certificateData);
-        List<Certificate> previousRoots = Certificate.snapshotRootCAs();
+        LinkedHashSet<Certificate> previousRoots = new LinkedHashSet<>(Certificate.rootCAs);
         Certificate previousBuiltIn = Certificate.builtIn;
 
         Assert.assertEquals(certificates.size(), 1);
         Assert.assertTrue(certificates.subList(1, certificates.size()).isEmpty());
 
         try {
-            Certificate.setRootCAs(List.of());
+            Certificate.setRootCAs(); // clear
             Certificate root = new Certificate(read("ca-root.crt"));
-            Certificate.setRootCAs(List.of(root));
+            Certificate.setRootCAs(root);
             Certificate.builtIn = root;
 
             Certificate certificate = new Certificate(certificateData);
@@ -60,7 +61,7 @@ public class CertificateTests {
 
     @Test
     public void testBuiltIn() throws Exception {
-        List<Certificate> previousRoots = Certificate.snapshotRootCAs();
+        LinkedHashSet<Certificate> previousRoots = new LinkedHashSet<>(Certificate.rootCAs);
         Certificate previousBuiltIn = Certificate.builtIn;
         boolean previousTrustBuiltIn = Certificate.isTrustBuiltIn();
 
@@ -164,7 +165,7 @@ public class CertificateTests {
     }
 
     private void assertTrust(String certificateData, String rootResource, boolean trustExpected) throws Exception {
-        List<Certificate> previousRoots = Certificate.snapshotRootCAs();
+        LinkedHashSet<Certificate> previousRoots = new LinkedHashSet<>(Certificate.rootCAs);
         Certificate previousBuiltIn = Certificate.builtIn;
 
         try {

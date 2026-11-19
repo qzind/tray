@@ -52,8 +52,9 @@ public class Certificate {
         }
     }
 
-    public static ArrayList<Certificate> rootCAs = new ArrayList<>();
-    public static Certificate builtIn;
+    static LinkedHashSet<Certificate> rootCAs = new LinkedHashSet<>();
+    static Certificate builtIn;
+    
     private static CertPathValidator validator;
     private static CertificateFactory factory;
     private static boolean trustBuiltIn = false;
@@ -129,8 +130,7 @@ public class Certificate {
                                                           "FFemhbCd7ZVbrTo0NcWZM1PTAbvlOikV9eh3i1Vot+3dJ8F27KwUTtnV0B9Jrxum\n" +
                                                           "W9P3C48mvwTxYZJFOu0N9UBLLg==\n" +
                                                           "-----END CERTIFICATE-----");
-
-            builtIn.valid = true;
+            
             setTrustBuiltIn(true);
             scanAdditionalCAs();
         }
@@ -139,7 +139,7 @@ public class Certificate {
         }
     }
 
-    public static void scanAdditionalCAs() {
+    public static synchronized void scanAdditionalCAs() {
         ArrayList<Map.Entry<Path, String>> certPaths = new ArrayList<>();
         // First, look for "authcert.override", "-DtrustedRootCert"
         certPaths.addAll(FileUtilities.parseDelimitedPaths(PrefsSearch.getString(ArgValue.AUTHCERT_OVERRIDE, App.getTrayProperties())));
@@ -154,10 +154,9 @@ public class Certificate {
                         Certificate caCert = new Certificate(FileUtilities.readLocalFile(certPath.getKey()));
                         caCert.rootCA = true;
                         caCert.valid = true;
-                        if(!rootCAs.contains(caCert)) {
+                        if(rootCAs.add(caCert)) {
                             log.debug("Adding CA certificate: CN={}, O={} ({})",
                                       caCert.getCommonName(), caCert.getOrganization(), caCert.getFingerprint());
-                            rootCAs.add(caCert);
                         } else {
                             log.warn("CA cert exists, skipping: {}", certPath.getKey());
                         }
@@ -200,11 +199,12 @@ public class Certificate {
             organization = getSubjectX509Principal(theCertificate, BCStyle.O);
             validFrom = theCertificate.getNotBefore().toInstant();
             validTo = theCertificate.getNotAfter().toInstant();
+            HashSet<Certificate> trustedRoots = new LinkedHashSet<>(rootCAs);
 
             // Check trust anchor against all root certs
             Certificate foundRoot = null;
             if(!this.rootCA) {
-                for(Certificate rootCA : rootCAs) {
+                for(Certificate rootCA : trustedRoots) {
                     HashSet<X509Certificate> chain = new HashSet<>();
                     try {
                         chain.add(rootCA.theCertificate);
@@ -233,6 +233,7 @@ public class Certificate {
 
             // Check for expiration
             Instant now = Instant.now();
+            // TODO: move this assignment outside the condition
             if (expired = (validFrom.isAfter(now) || validTo.isBefore(now))) {
                 log.warn("Certificate is expired: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
                 valid = false;
@@ -240,9 +241,7 @@ public class Certificate {
 
             // If cert matches a rootCA trust it blindly
             // If cert is chained to a 3rd party rootCA, trust it blindly as well
-            Iterator<Certificate> allCerts = rootCAs.iterator();
-            while(allCerts.hasNext()) {
-                Certificate cert = allCerts.next();
+            for(Certificate cert : trustedRoots) {
                 if(cert.equals(this) || (cert.equals(foundRoot) && !cert.equals(builtIn))) {
                     log.debug("Adding {} to {} list", cert.toString(), Constants.ALLOW_FILE);
                     if(!isSaved()) {
@@ -522,26 +521,31 @@ public class Certificate {
         return super.equals(obj);
     }
 
-    public static void setTrustBuiltIn(boolean trustBuiltIn) {
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(data(true));
+    }
+
+    /**
+     * Treats the builtIn <code>Certificate</code> as the first, valid, trusted rootCA
+     */
+    public static synchronized void setTrustBuiltIn(boolean trustBuiltIn) {
         if(trustBuiltIn) {
-            if (!rootCAs.contains(builtIn)) {
-                log.debug("Adding internal CA certificate: CN={}, O={} ({})",
-                          builtIn.getCommonName(), builtIn.getOrganization(), builtIn.getFingerprint());
-                builtIn.rootCA = true;
-                builtIn.valid = true;
-                rootCAs.add(0, builtIn);
-            }
+            rootCAs.addFirst(builtIn);
+            builtIn.rootCA = true;
+            builtIn.valid = true;
+            log.debug("Added internal CA certificate: CN={}, O={} ({})",
+                      builtIn.getCommonName(), builtIn.getOrganization(), builtIn.getFingerprint());
         } else {
-            if (rootCAs.contains(builtIn)) {
-                log.debug("Removing internal CA certificate: CN={}, O={} ({})",
+            if(rootCAs.remove(builtIn)) {
+                log.debug("Removed internal CA certificate: CN={}, O={} ({})",
                           builtIn.getCommonName(), builtIn.getOrganization(), builtIn.getFingerprint());
-                rootCAs.remove(builtIn);
             }
         }
         Certificate.trustBuiltIn = trustBuiltIn;
     }
 
-    public static boolean isTrustBuiltIn() {
+    public static synchronized boolean isTrustBuiltIn() {
         return trustBuiltIn;
     }
 
@@ -549,8 +553,17 @@ public class Certificate {
         return thirdParty;
     }
 
-    public static boolean hasAdditionalCAs() {
-        return rootCAs.size() > (isTrustBuiltIn() ? 1 : 0);
+    public static synchronized boolean hasAdditionalCAs() {
+        return rootCAs.size() > (trustBuiltIn ? 1 : 0);
+    }
+
+    static synchronized void setRootCAs(Collection<Certificate> certs) {
+        rootCAs.clear();
+        rootCAs.addAll(certs);
+    }
+
+    static synchronized void setRootCAs(Certificate ... certs) {
+        setRootCAs(List.of(certs));
     }
 
     private static String getSubjectX509Principal(X509Certificate cert, ASN1ObjectIdentifier key) {
@@ -564,5 +577,4 @@ public class Certificate {
         }
         return "";
     }
-
 }

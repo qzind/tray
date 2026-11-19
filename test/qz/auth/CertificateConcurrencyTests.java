@@ -115,10 +115,12 @@ public class CertificateConcurrencyTests {
         Thread worker = new Thread(() -> {
             try {
                 task.run();
-                latch.countDown();
             }
             catch(Throwable t) {
                 failure.compareAndSet(null, t);
+            }
+            finally {
+                latch.countDown();
             }
         });
         worker.setDaemon(true);

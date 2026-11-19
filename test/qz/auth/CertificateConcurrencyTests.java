@@ -41,6 +41,9 @@ public class CertificateConcurrencyTests {
         Certificate root = singleBuiltIn(new Certificate(customRootCa()));
         Certificate.setTrustBuiltIn(false);
 
+        // ensure we start from zero
+        Assert.assertEquals(Certificate.rootCAs.size(), 0);
+
         race(
                 () -> Certificate.setTrustBuiltIn(true),
                 () -> Certificate.setTrustBuiltIn(true),
@@ -48,6 +51,7 @@ public class CertificateConcurrencyTests {
                 () -> Certificate.setTrustBuiltIn(true)
         );
 
+        // dupes should only be added once
         Assert.assertEquals(Certificate.rootCAs.size(), 1);
         Assert.assertSame(Certificate.rootCAs.getFirst(), root);
         Assert.assertTrue(Certificate.isTrustBuiltIn());
@@ -56,11 +60,10 @@ public class CertificateConcurrencyTests {
 
     @Test
     public void testOverrideRace() throws Exception {
-        // concurrent rescans must publish one copy of an override
         Certificate.setRootCAs(); // clear
         Certificate.setTrustBuiltIn(false);
 
-        // ensure there zero
+        // ensure we start from zero
         Assert.assertEquals(Certificate.rootCAs.size(), 0);
         
         System.setProperty("authcert.override", customRootCaPath().toString());

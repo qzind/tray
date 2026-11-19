@@ -4,6 +4,7 @@
 
 # Halt on first error
 set -e
+set -x # TODO: Remove before merging
 
 # Configured by ant at build time
 JAVA_MIN="${javac.target}"

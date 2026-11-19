@@ -187,8 +187,8 @@
     <!-- Launch agent to bundle.  (e.g. -javaagent:foo.jar) using JVM bytecode injection -->
     <target name="calculate-launch-agent">
         <!-- Add agent here, e.g. "jdk-8041911.jar" -->
-        <property name="apple.launch.agent" value=""/>
-        <property name="linux.launch.agent" value=""/>
+        <property name="apple.launch.agent" value="jdk-8041911.jar"/>
+        <property name="linux.launch.agent" value="jdk-8041911.jar"/>
         <property name="windows.launch.agent" value=""/>
 
         <condition property="custom.launch.agent" value="${apple.launch.agent}">

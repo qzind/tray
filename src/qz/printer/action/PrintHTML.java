@@ -279,7 +279,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             log.trace("{}", settings.toString());
 
             if (pxlOpts.isShowDialog()) {
-                if (App.isHeadless() || GraphicsEnvironment.isHeadless()) {
+                if (App.isHeadless()) {
                     throw new PrinterException("Print dialog is unavailable in headless mode");
                 }
                 checkDialog(job.showPrintDialog(null));

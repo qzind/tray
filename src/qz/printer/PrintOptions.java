@@ -1,22 +1,22 @@
 package qz.printer;
 
+import javafx.print.*;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.App;
 import qz.common.Sluggable;
 import qz.utils.LoggerUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.StringUtilities;
 import qz.utils.SystemUtilities;
 
+import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.Size2DSyntax;
-import javax.print.attribute.standard.Chromaticity;
-import javax.print.attribute.standard.OrientationRequested;
-import javax.print.attribute.standard.PrinterResolution;
-import javax.print.attribute.standard.Sides;
+import javax.print.attribute.standard.*;
 import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
@@ -349,8 +349,13 @@ public class PrintOptions {
             try { psOptions.showDialog = configOpts.getBoolean("showDialog"); }
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "showDialog", configOpts.opt("showDialog")); }
         }
-        if (psOptions.showDialog && (format == PrintingUtilities.Format.COMMAND || format == PrintingUtilities.Format.DIRECT)) {
-            throw new UnsupportedOperationException("Print dialogs are not supported for raw printing");
+        if(psOptions.showDialog) {
+            if(!App.isHeadless()) {
+                log.info("Print dialog will be shown before printing");
+            } else {
+                log.warn("Print dialog cannot be shown in headless environment, ignoring");
+                psOptions.showDialog = false;
+            }
         }
         if (!configOpts.isNull("size")) {
             Size s = new Size();
@@ -594,6 +599,56 @@ public class PrintOptions {
         public Unit getUnits() {
             return units;
         }
+
+        /**
+         * Copies JobSettings entries from showPrintDialog() back to PrintOptions.Pixel
+         */
+        public void sync(JobSettings jobSettings) {
+            colorType = ColorType.from(jobSettings.getPrintColor());
+            if(jobSettings.getPrintSides() != null) {
+                duplex = switch(jobSettings.getPrintSides()) {
+                    case DUPLEX -> Sides.DUPLEX;
+                    case TUMBLE -> Sides.TUMBLE;
+                    default -> Sides.ONE_SIDED;
+                };
+            }
+            orientation = Orientation.from(jobSettings.getPageLayout());
+            copies = jobSettings.getCopies();
+            size = null; // size can't be trusted
+        }
+
+        /**
+         * Copies PrintRequestAttributeSet entries from showPrintDialog() back to PrintOptions.Pixel
+         */
+        public void sync(PrintRequestAttributeSet attributeSet) {
+            Class<?>[] attributes = {
+                    Chromaticity.class,
+                    Sides.class,
+                    OrientationRequested.class,
+                    Copies.class,
+                    PrinterResolution.class,
+                    };
+
+            for(Class<?> attribute : attributes) {
+                Object val;
+                if((val = attributeSet.get(attribute)) != null) {
+                    switch(val) {
+                        case Chromaticity chromaticity-> colorType = ColorType.from(chromaticity);
+                        case Sides sides -> duplex = sides;
+                        case OrientationRequested orientationRequested -> orientation = Orientation.from(orientationRequested);
+                        case Copies copiesObj -> copies = copiesObj.getValue();
+                        case PrinterResolution resolution -> {
+                            density = resolution.getFeedResolution(units.getMediaSizeUnits());
+                            crossDensity = resolution.getCrossFeedResolution(units.getMediaSizeUnits());
+                        }
+
+                        default -> log.warn("Cannot map attribute {} to PrintOptions.Pixel field", val.getClass().getSimpleName());
+                    }
+                }
+            }
+
+            size = null; // size can't be trusted
+        }
     }
 
     /** PrintService Defaults **/
@@ -767,6 +822,26 @@ public class PrintOptions {
             this.degreesRot = degreesRot;
         }
 
+        static Orientation from(OrientationRequested orientationRequested) {
+            for(Orientation orientation : values()) {
+                if(orientationRequested == orientation.orientationRequested) {
+                    return orientation;
+                }
+            }
+            return null;
+        }
+
+        static Orientation from(PageLayout pageLayout) {
+            if(pageLayout == null || pageLayout.getPageOrientation() == null) {
+                return null;
+            }
+            return switch(pageLayout.getPageOrientation()) {
+                case REVERSE_PORTRAIT -> Orientation.REVERSE_PORTRAIT;
+                case LANDSCAPE -> Orientation.LANDSCAPE;
+                case REVERSE_LANDSCAPE -> Orientation.REVERSE_LANDSCAPE;
+                default -> Orientation.PORTRAIT;
+            };
+        }
 
         public OrientationRequested getAsOrientRequested() {
             return orientationRequested;
@@ -800,6 +875,24 @@ public class PrintOptions {
             this.chromatic = chromatic;
         }
 
+        static ColorType from(Chromaticity chromatic) {
+            for(ColorType colorType : values()) {
+                if(colorType.chromatic == chromatic) {
+                    return colorType;
+                }
+            }
+            return ColorType.DEFAULT;
+        }
+        
+        static ColorType from(PrintColor printColor) {
+            if(printColor == null) {
+                return DEFAULT;
+            }
+            return switch(printColor) {
+                case COLOR -> COLOR;
+                case MONOCHROME -> GRAYSCALE;
+            };
+        }
 
         public Chromaticity getAsChromaticity() {
             return chromatic;

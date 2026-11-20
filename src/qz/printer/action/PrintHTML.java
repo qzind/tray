@@ -19,7 +19,6 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.App;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
@@ -277,23 +276,14 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
             settings.setCopies(pxlOpts.getCopies());
             log.trace("{}", settings.toString());
-
-            if (pxlOpts.isShowDialog()) {
-                if (App.isHeadless()) {
-                    throw new PrinterException("Print dialog is unavailable in headless mode");
-                }
-                checkDialog(job.showPrintDialog(null));
-            }
+            showPrintDialog(pxlOpts, job, null);
 
             //javaFX lies about this value, so pull from original print service
-            CopiesSupported cSupport = null;
-            if (!pxlOpts.isShowDialog()) {
-                cSupport = (CopiesSupported)output.getPrintService()
-                        .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], null);
-            }
+            CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
+                    .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], null);
 
             try {
-                if (pxlOpts.isShowDialog() || (cSupport != null && cSupport.contains(pxlOpts.getCopies()))) {
+                if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
                         WebApp.print(job, model);
                     }

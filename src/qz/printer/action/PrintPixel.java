@@ -5,7 +5,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
-import qz.App;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -118,11 +117,10 @@ public abstract class PrintPixel {
 
 
     protected void printCopies(PrintOutput output, PrintOptions.Pixel pxlOpts, PrinterJob job, PrintRequestAttributeSet attributes) throws PrinterException {
-        int copies = getEffectiveCopies(pxlOpts, attributes);
-        log.info("Starting printing ({} copies)", copies);
+        log.info("Starting printing ({} copies)", pxlOpts.getCopies());
 
         PrinterResolution rUsing = (PrinterResolution)attributes.get(PrinterResolution.class);
-        if (rUsing != null && !pxlOpts.isShowDialog()) {
+        if (rUsing != null) {
             List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
             if (!rSupport.isEmpty()) {
                 if (!rSupport.contains(rUsing)) {
@@ -134,51 +132,56 @@ public abstract class PrintPixel {
             }
         }
 
-        if (pxlOpts.isShowDialog()) {
-            job.print(attributes);
-            return;
-        }
-
         CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
                 .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], attributes);
 
-        if (cSupport != null && cSupport.contains(copies)) {
-            attributes.add(new Copies(copies));
+        if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
+            attributes.add(new Copies(pxlOpts.getCopies()));
             job.print(attributes);
         } else {
-            for(int i = 0; i < copies; i++) {
+            for(int i = 0; i < pxlOpts.getCopies(); i++) {
                 job.print(attributes);
             }
         }
     }
-
-    protected void showPrintDialog(PrintOptions.Pixel pxlOpts, PrinterJob job, PrintRequestAttributeSet attributes) throws PrinterException {
+    
+    /**
+     * Conditionally raises the native OS print dialog
+     */
+    protected boolean showPrintDialog(PrintOptions.Pixel pxlOpts, Object printerJob, PrintRequestAttributeSet attributes) throws PrinterException {
         if (!pxlOpts.isShowDialog()) {
-            return;
-        }
-        if (App.isHeadless()) {
-            throw new PrinterException("Print dialog is unavailable in headless mode");
+            return false;
         }
 
-        attributes.add(new Copies(pxlOpts.getCopies()));
-        attributes.add(DialogTypeSelection.NATIVE);
-        checkDialog(job.printDialog(attributes));
-    }
-
-    static int getEffectiveCopies(PrintOptions.Pixel pxlOpts, PrintRequestAttributeSet attributes) {
-        if (pxlOpts.isShowDialog()) {
-            Copies accepted = (Copies)attributes.get(Copies.class);
-            if (accepted != null) {
-                return accepted.getValue();
+        if(attributes != null) {
+            attributes.add(new Copies(pxlOpts.getCopies()));
+            attributes.add(DialogTypeSelection.NATIVE);
+        }
+        
+        boolean result = switch(printerJob) {
+            case PrinterJob awt -> {
+                if(awt.printDialog(attributes)) {
+                    pxlOpts.sync(attributes);
+                    yield true;
+                }
+                yield false;
             }
-        }
-        return pxlOpts.getCopies();
-    }
-
-    static void checkDialog(boolean accepted) throws PrinterAbortException {
-        if (!accepted) {
+            case javafx.print.PrinterJob jfx -> {
+                if(jfx.showPrintDialog(null)) {
+                    pxlOpts.sync(jfx.getJobSettings());
+                    yield true;
+                }
+                yield false;
+            }
+            default -> {
+                log.error("Cannot raise print dialog from {}", pxlOpts.getClass().getName());
+                yield false;
+            }
+        };
+        if(!result) {
             throw new PrinterAbortException();
         }
+        return true;
     }
 
     /**

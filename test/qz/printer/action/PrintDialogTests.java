@@ -10,40 +10,19 @@ import qz.utils.PrintingUtilities;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.Copies;
-import java.awt.print.PrinterAbortException;
 
 public class PrintDialogTests {
     @Test
-    public void testConfiguredCopies() throws Exception {
-        PrintOptions.Pixel options = options(false);
+    public void testSyncedCopies() throws Exception {
+        PrintOptions.Pixel options = options(2);
         PrintRequestAttributeSet attributes = attributes(3);
+        options.sync(attributes);
 
-        Assert.assertEquals(PrintPixel.getEffectiveCopies(options, attributes), 2);
+        Assert.assertEquals(options.getCopies(), 3);
     }
-
-    @Test
-    public void testAcceptedCopies() throws Exception {
-        PrintOptions.Pixel options = options(true);
-        PrintRequestAttributeSet attributes = attributes(3);
-
-        Assert.assertEquals(PrintPixel.getEffectiveCopies(options, attributes), 3);
-    }
-
-    @Test
-    public void testAccepted() throws Exception {
-        PrintPixel.checkDialog(true);
-    }
-
-    @Test
-    public void testCancelled() {
-        Assert.expectThrows(PrinterAbortException.class, () -> PrintPixel.checkDialog(false));
-    }
-
-    private PrintOptions.Pixel options(boolean showDialog) throws Exception {
-        JSONObject values = new JSONObject()
-                .put("copies", 2)
-                .put("showDialog", showDialog);
-        return new PrintOptions(values, new PrintOutput(null), PrintingUtilities.Format.PDF).getPixelOptions();
+    
+    private PrintOptions.Pixel options(int copies) throws Exception {
+        return new PrintOptions(new JSONObject().put("copies", copies), new PrintOutput(null), PrintingUtilities.Format.PDF).getPixelOptions();
     }
 
     private PrintRequestAttributeSet attributes(int copies) {

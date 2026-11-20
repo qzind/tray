@@ -156,7 +156,7 @@ public abstract class PrintPixel {
         if (!pxlOpts.isShowDialog()) {
             return;
         }
-        if (App.isHeadless() || GraphicsEnvironment.isHeadless()) {
+        if (App.isHeadless()) {
             throw new PrinterException("Print dialog is unavailable in headless mode");
         }
 

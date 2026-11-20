@@ -7,6 +7,39 @@ import qz.utils.PrintingUtilities;
 
 public class PrintOptionsTests {
     @Test
+    public void testDialogDefault() throws Exception {
+        PrintOptions printOptions = new PrintOptions(new JSONObject(), new PrintOutput(null), PrintingUtilities.Format.PDF);
+
+        Assert.assertFalse(printOptions.getPixelOptions().isShowDialog());
+    }
+
+    @Test
+    public void testDialogEnabled() throws Exception {
+        PrintOptions printOptions = createDialogOptions(true, PrintingUtilities.Format.PDF);
+
+        Assert.assertTrue(printOptions.getPixelOptions().isShowDialog());
+    }
+
+    @Test
+    public void testDialogDisabled() throws Exception {
+        PrintOptions printOptions = createDialogOptions(false, PrintingUtilities.Format.PDF);
+
+        Assert.assertFalse(printOptions.getPixelOptions().isShowDialog());
+    }
+
+    @Test
+    public void testDialogCommand() {
+        Assert.expectThrows(UnsupportedOperationException.class,
+                () -> createDialogOptions(true, PrintingUtilities.Format.COMMAND));
+    }
+
+    @Test
+    public void testDialogDirect() {
+        Assert.expectThrows(UnsupportedOperationException.class,
+                () -> createDialogOptions(true, PrintingUtilities.Format.DIRECT));
+    }
+
+    @Test
     public void testPdfInherit() throws Exception {
         PrintOptions printOptions = createSizeOptions("inherit", PrintingUtilities.Format.PDF);
 
@@ -86,6 +119,11 @@ public class PrintOptionsTests {
 
     private PrintOptions createSizeOptions(Object size, PrintingUtilities.Format format) throws Exception {
         JSONObject options = new JSONObject().put("size", size);
+        return new PrintOptions(options, new PrintOutput(null), format);
+    }
+
+    private PrintOptions createDialogOptions(boolean showDialog, PrintingUtilities.Format format) throws Exception {
+        JSONObject options = new JSONObject().put("showDialog", showDialog);
         return new PrintOptions(options, new PrintOutput(null), format);
     }
 }

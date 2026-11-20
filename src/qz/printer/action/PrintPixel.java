@@ -19,6 +19,7 @@ import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
 import java.awt.print.PageFormat;
 import java.awt.print.Paper;
+import java.awt.print.PrinterAbortException;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.IOException;
@@ -142,6 +143,45 @@ public abstract class PrintPixel {
                 job.print(attributes);
             }
         }
+    }
+    
+    /**
+     * Conditionally raises the native OS print dialog
+     */
+    protected boolean showPrintDialog(PrintOptions.Pixel pxlOpts, Object printerJob, PrintRequestAttributeSet attributes) throws PrinterException {
+        if (!pxlOpts.isShowDialog()) {
+            return false;
+        }
+
+        if(attributes != null) {
+            attributes.add(new Copies(pxlOpts.getCopies()));
+            attributes.add(DialogTypeSelection.NATIVE);
+        }
+        
+        boolean result = switch(printerJob) {
+            case PrinterJob awt -> {
+                if(awt.printDialog(attributes)) {
+                    pxlOpts.sync(attributes);
+                    yield true;
+                }
+                yield false;
+            }
+            case javafx.print.PrinterJob jfx -> {
+                if(jfx.showPrintDialog(null)) {
+                    pxlOpts.sync(jfx.getJobSettings());
+                    yield true;
+                }
+                yield false;
+            }
+            default -> {
+                log.error("Cannot raise print dialog from {}", pxlOpts.getClass().getName());
+                yield false;
+            }
+        };
+        if(!result) {
+            throw new PrinterAbortException();
+        }
+        return true;
     }
 
     /**

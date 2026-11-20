@@ -408,6 +408,12 @@
                             <button type="button" class="btn btn-default" onclick="printImage();">Print Image</button>
                             <button id="pxlDropBtn" type="button" class="btn btn-primary" onclick="printFileDrop(event);" data-type="pixel"></button>
                             <label for="fileUpload" type="button" class="btn btn-default upload-button"><i class="fa fa-folder-open-o"></i> Upload a file...</label>
+                            <span class="pull-right">
+                                <input type="checkbox" value="" id="showDialog">
+                                <label class="tip" for="showDialog" data-toggle="tooltip" title="Shows a print dialog prior to printing (Pixel Only)">
+                                    Show print dialog
+                                </label>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -3348,6 +3354,7 @@
                             forceRaw: includedValue($("#rawForceRaw"), isChecked($("#rawForceRaw"), cleanConditions['rawForceRaw'])),
                             encoding: includedValue($("#rawEncoding")),
                             spool: { size: spoolSize, end: includedValue($("#rawSpoolEnd")) },
+                            showDialog: isChecked($("#showDialog")),
 
                             bounds: pxlBounds,
                             colorType: includedValue($("#pxlColorType")),

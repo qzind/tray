@@ -35,7 +35,7 @@ public class CertificateTests {
     public void testSingle() throws Exception {
         String certificateData = read("leaf-direct.crt");
         List<X509Certificate> certificates = Certificate.parseCertificates(certificateData);
-        LinkedHashSet<Certificate> previousRoots = new LinkedHashSet<>(Certificate.rootCAs);
+        LinkedHashSet<Certificate> previousRoots = Certificate.snapshotRootCAs();
         Certificate previousBuiltIn = Certificate.builtIn;
 
         Assert.assertEquals(certificates.size(), 1);
@@ -61,7 +61,7 @@ public class CertificateTests {
 
     @Test
     public void testBuiltIn() throws Exception {
-        LinkedHashSet<Certificate> previousRoots = new LinkedHashSet<>(Certificate.rootCAs);
+        LinkedHashSet<Certificate> previousRoots = Certificate.snapshotRootCAs();
         Certificate previousBuiltIn = Certificate.builtIn;
         boolean previousTrustBuiltIn = Certificate.isTrustBuiltIn();
 
@@ -165,7 +165,7 @@ public class CertificateTests {
     }
 
     private void assertTrust(String certificateData, String rootResource, boolean trustExpected) throws Exception {
-        LinkedHashSet<Certificate> previousRoots = new LinkedHashSet<>(Certificate.rootCAs);
+        LinkedHashSet<Certificate> previousRoots = Certificate.snapshotRootCAs();
         Certificate previousBuiltIn = Certificate.builtIn;
 
         try {

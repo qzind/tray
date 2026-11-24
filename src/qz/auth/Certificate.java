@@ -54,7 +54,7 @@ public class Certificate {
 
     static LinkedHashSet<Certificate> rootCAs = new LinkedHashSet<>();
     static Certificate builtIn;
-    
+
     private static CertPathValidator validator;
     private static CertificateFactory factory;
     private static boolean trustBuiltIn = false;
@@ -130,7 +130,7 @@ public class Certificate {
                                                           "FFemhbCd7ZVbrTo0NcWZM1PTAbvlOikV9eh3i1Vot+3dJ8F27KwUTtnV0B9Jrxum\n" +
                                                           "W9P3C48mvwTxYZJFOu0N9UBLLg==\n" +
                                                           "-----END CERTIFICATE-----");
-            
+
             setTrustBuiltIn(true);
             scanAdditionalCAs();
         }
@@ -199,7 +199,7 @@ public class Certificate {
             organization = getSubjectX509Principal(theCertificate, BCStyle.O);
             validFrom = theCertificate.getNotBefore().toInstant();
             validTo = theCertificate.getNotAfter().toInstant();
-            HashSet<Certificate> trustedRoots = new LinkedHashSet<>(rootCAs);
+            LinkedHashSet<Certificate> trustedRoots = snapshotRootCAs();
 
             // Check trust anchor against all root certs
             Certificate foundRoot = null;
@@ -555,6 +555,10 @@ public class Certificate {
 
     public static synchronized boolean hasAdditionalCAs() {
         return rootCAs.size() > (trustBuiltIn ? 1 : 0);
+    }
+
+    static synchronized LinkedHashSet<Certificate> snapshotRootCAs() {
+        return new LinkedHashSet<>(rootCAs);
     }
 
     static synchronized void setRootCAs(Collection<Certificate> certs) {

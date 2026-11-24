@@ -42,7 +42,6 @@ public class CertificateTests {
         Assert.assertTrue(certificates.subList(1, certificates.size()).isEmpty());
 
         try {
-            Certificate.setRootCAs(); // clear
             Certificate root = new Certificate(read("ca-root.crt"));
             Certificate.setRootCAs(root);
             Certificate.builtIn = root;
@@ -169,7 +168,6 @@ public class CertificateTests {
         Certificate previousBuiltIn = Certificate.builtIn;
 
         try {
-            Certificate.setRootCAs(); // clear
             Certificate root = new Certificate(read(rootResource));
             Certificate.setRootCAs(root);
             Certificate.builtIn = root;

@@ -66,7 +66,7 @@ public class CertificateTests {
         boolean previousTrustBuiltIn = Certificate.isTrustBuiltIn();
 
         try {
-            Certificate.setRootCAs(List.of());
+            Certificate.setRootCAs(); // clear
             Certificate.setTrustBuiltIn(true);
 
             Certificate certificate = new Certificate(read("chain-demo.txt"));
@@ -169,7 +169,7 @@ public class CertificateTests {
         Certificate previousBuiltIn = Certificate.builtIn;
 
         try {
-            Certificate.setRootCAs(List.of());
+            Certificate.setRootCAs(); // clear
             Certificate root = new Certificate(read(rootResource));
             Certificate.setRootCAs(root);
             Certificate.builtIn = root;

@@ -171,7 +171,7 @@ public class CertificateTests {
         try {
             Certificate.setRootCAs(List.of());
             Certificate root = new Certificate(read(rootResource));
-            Certificate.setRootCAs(List.of(root));
+            Certificate.setRootCAs(root);
             Certificate.builtIn = root;
 
             Certificate certificate = new Certificate(certificateData);

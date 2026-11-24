@@ -558,6 +558,7 @@ public class Certificate {
     }
 
     static synchronized LinkedHashSet<Certificate> snapshotRootCAs() {
+        // Copy under the same lock used by root writers
         return new LinkedHashSet<>(rootCAs);
     }
 

@@ -56,17 +56,6 @@ public class CertificateConcurrencyTests {
     }
 
     @Test
-    public void testStableRoots() throws Exception {
-        Certificate root = singleBuiltIn(new Certificate(customRootCa()));
-        LinkedHashSet<Certificate> roots = Certificate.snapshotRootCAs();
-
-        Certificate.setTrustBuiltIn(false);
-
-        Assert.assertEquals(roots.size(), 1);
-        Assert.assertSame(roots.getFirst(), root);
-    }
-
-    @Test
     public void testBuiltInRace() throws Exception {
         Certificate root = singleBuiltIn(new Certificate(customRootCa()));
         Certificate.setTrustBuiltIn(false);

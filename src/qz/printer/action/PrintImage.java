@@ -166,7 +166,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
-        if (showPrintDialog(pxlOpts, job, attributes)) {
+        boolean prompted = showPrintDialog(pxlOpts, job, attributes);
+        if (prompted) {
             page = job.getPageFormat(attributes);
         }
 
@@ -176,7 +177,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         imageRotation = pxlOpts.getRotation();
 
         //reverse fix for OSX
-        if (SystemUtilities.isMac() && pxlOpts.getOrientation() != null
+        if (!prompted && SystemUtilities.isMac() && pxlOpts.getOrientation() != null
                 && pxlOpts.getOrientation().getAsOrientRequested() == OrientationRequested.REVERSE_LANDSCAPE) {
             imageRotation += 180;
             manualReverse = true;
@@ -193,7 +194,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
         job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
 
-        if (pxlOpts.getSize() != null && pxlOpts.getSize().isCustom()) {
+        if (!prompted && pxlOpts.getSize() != null && pxlOpts.getSize().isCustom()) {
                 // User defined dimensions, so this can be safely removed
                 attributes.remove(MediaPrintableArea.class);
             // forcing a custom size, skip validation

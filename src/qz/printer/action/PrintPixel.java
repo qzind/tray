@@ -5,6 +5,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
+import qz.App;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -119,6 +120,11 @@ public abstract class PrintPixel {
     protected void printCopies(PrintOutput output, PrintOptions.Pixel pxlOpts, PrinterJob job, PrintRequestAttributeSet attributes) throws PrinterException {
         log.info("Starting printing ({} copies)", pxlOpts.getCopies());
 
+        if (pxlOpts.isShowDialog()) {
+            job.print(attributes);
+            return;
+        }
+
         PrinterResolution rUsing = (PrinterResolution)attributes.get(PrinterResolution.class);
         if (rUsing != null) {
             List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
@@ -151,6 +157,9 @@ public abstract class PrintPixel {
     protected boolean showPrintDialog(PrintOptions.Pixel pxlOpts, Object printerJob, PrintRequestAttributeSet attributes) throws PrinterException {
         if (!pxlOpts.isShowDialog()) {
             return false;
+        }
+        if (App.isHeadless()) {
+            throw new PrinterException("Print dialog is unavailable in headless mode");
         }
 
         if(attributes != null) {

@@ -20,9 +20,30 @@ public class PrintDialogTests {
 
         Assert.assertEquals(options.getCopies(), 3);
     }
+
+    @Test
+    public void testRawUnsupported() throws Exception {
+        PrintOptions options = dialogOptions(PrintingUtilities.Format.COMMAND);
+
+        Assert.expectThrows(UnsupportedOperationException.class,
+                () -> new PrintRaw().print(null, options));
+    }
+
+    @Test
+    public void testDirectUnsupported() throws Exception {
+        PrintOptions options = dialogOptions(PrintingUtilities.Format.DIRECT);
+
+        Assert.expectThrows(UnsupportedOperationException.class,
+                () -> new PrintDirect().print(null, options));
+    }
     
     private PrintOptions.Pixel options(int copies) throws Exception {
         return new PrintOptions(new JSONObject().put("copies", copies), new PrintOutput(null), PrintingUtilities.Format.PDF).getPixelOptions();
+    }
+
+    private PrintOptions dialogOptions(PrintingUtilities.Format format) throws Exception {
+        JSONObject options = new JSONObject().put("showDialog", true);
+        return new PrintOptions(options, new PrintOutput(null), format);
     }
 
     private PrintRequestAttributeSet attributes(int copies) {

@@ -6,6 +6,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.App;
 import qz.common.Sluggable;
 import qz.utils.LoggerUtilities;
 import qz.utils.PrintingUtilities;
@@ -349,7 +350,12 @@ public class PrintOptions {
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "showDialog", configOpts.opt("showDialog")); }
         }
         if(psOptions.showDialog) {
-            log.info("Print dialog will be shown before printing");
+            if(!App.isHeadless()) {
+                log.info("Print dialog will be shown before printing");
+            } else {
+                log.warn("Print dialog cannot be shown in headless environment, ignoring");
+                psOptions.showDialog = false;
+            }
         }
         if (!configOpts.isNull("size")) {
             Size s = new Size();

@@ -144,10 +144,6 @@ public class PrintRaw implements PrintProcessor {
 
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrintException {
-        if (options.getPixelOptions().isShowDialog()) {
-            throw new UnsupportedOperationException("Print dialogs are not supported for raw printing");
-        }
-
         PrintOptions.Raw rawOpts = options.getRawOptions();
 
         List<ByteArrayBuilder> pages;

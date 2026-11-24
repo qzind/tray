@@ -276,14 +276,14 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
             settings.setCopies(pxlOpts.getCopies());
             log.trace("{}", settings.toString());
-            boolean prompted = showPrintDialog(pxlOpts, job, null);
+            showPrintDialog(pxlOpts, job, null);
 
             //javaFX lies about this value, so pull from original print service
-            CopiesSupported cSupport = prompted ? null : (CopiesSupported)output.getPrintService()
+            CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
                     .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], null);
 
             try {
-                if (prompted || (cSupport != null && cSupport.contains(pxlOpts.getCopies()))) {
+                if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
                         WebApp.print(job, model);
                     }

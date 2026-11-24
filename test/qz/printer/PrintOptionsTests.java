@@ -28,6 +28,18 @@ public class PrintOptionsTests {
     }
 
     @Test
+    public void testDialogCommand() {
+        Assert.expectThrows(UnsupportedOperationException.class,
+                () -> createDialogOptions(true, PrintingUtilities.Format.COMMAND));
+    }
+
+    @Test
+    public void testDialogDirect() {
+        Assert.expectThrows(UnsupportedOperationException.class,
+                () -> createDialogOptions(true, PrintingUtilities.Format.DIRECT));
+    }
+
+    @Test
     public void testPdfInherit() throws Exception {
         PrintOptions printOptions = createSizeOptions("inherit", PrintingUtilities.Format.PDF);
 

@@ -51,10 +51,6 @@ public class PrintDirect extends PrintRaw {
 
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrintException {
-        if (options.getPixelOptions().isShowDialog()) {
-            throw new UnsupportedOperationException("Print dialogs are not supported for raw printing");
-        }
-
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
         attributes.add(new JobName(options.getRawOptions().getJobName(Constants.RAW_PRINT), Locale.getDefault()));
 

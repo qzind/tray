@@ -161,12 +161,14 @@ public abstract class PrintPixel {
         boolean result = switch(printerJob) {
             case PrinterJob awt -> {
                 if(awt.printDialog(attributes)) {
+                    awt.getPrintService();
                     pxlOpts.sync(attributes);
                     yield true;
                 }
                 yield false;
             }
             case javafx.print.PrinterJob jfx -> {
+                System.err.println("Printer: " + jfx.getPrinter().getName());
                 if(jfx.showPrintDialog(null)) {
                     pxlOpts.sync(jfx.getJobSettings());
                     yield true;

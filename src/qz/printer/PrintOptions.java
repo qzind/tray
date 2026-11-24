@@ -614,7 +614,7 @@ public class PrintOptions {
             }
             orientation = Orientation.from(jobSettings.getPageLayout());
             copies = jobSettings.getCopies();
-            size = null; // size can't be trusted
+            size = null; // TODO: can size be trusted?
         }
 
         /**
@@ -647,7 +647,7 @@ public class PrintOptions {
                 }
             }
 
-            size = null; // size can't be trusted
+            size = null; // TODO: can size be trusted?
         }
     }
 

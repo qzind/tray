@@ -561,8 +561,8 @@ public class Certificate {
      * Snapshot a thread-safe copy of <code>rootCAs</code>
      * <p>
      * Certificate constructors are instance-based (non-static) and rely on <code>rootCAs</code> for trust calculation.
-     * However, they can't easily lock on <code>rootCAs</code> without introducing potential deadlocks conditions by
-     * copying under the same static synchronized lock used by other functions.
+     * However, they can't easily lock on <code>rootCAs</code> without introducing potential deadlocks conditions.  Instead,
+     * we'll copy under the same static synchronized lock used by other functions.
      * </p>
      */
     static synchronized LinkedHashSet<Certificate> snapshotRootCAs() {

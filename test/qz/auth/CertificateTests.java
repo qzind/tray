@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class CertificateTests {
@@ -35,16 +35,15 @@ public class CertificateTests {
     public void testSingle() throws Exception {
         String certificateData = read("leaf-direct.crt");
         List<X509Certificate> certificates = Certificate.parseCertificates(certificateData);
-        List<Certificate> previousRoots = new ArrayList<>(Certificate.rootCAs);
+        LinkedHashSet<Certificate> previousRoots = Certificate.snapshotRootCAs();
         Certificate previousBuiltIn = Certificate.builtIn;
 
         Assert.assertEquals(certificates.size(), 1);
         Assert.assertTrue(certificates.subList(1, certificates.size()).isEmpty());
 
         try {
-            Certificate.rootCAs.clear();
             Certificate root = new Certificate(read("ca-root.crt"));
-            Certificate.rootCAs.add(root);
+            Certificate.setRootCAs(root);
             Certificate.builtIn = root;
 
             Certificate certificate = new Certificate(certificateData);
@@ -54,20 +53,19 @@ public class CertificateTests {
             Assert.assertSame(Certificate.rootCAs.getFirst(), root);
         }
         finally {
-            Certificate.rootCAs.clear();
-            Certificate.rootCAs.addAll(previousRoots);
             Certificate.builtIn = previousBuiltIn;
+            Certificate.setRootCAs(previousRoots);
         }
     }
 
     @Test
     public void testBuiltIn() throws Exception {
-        List<Certificate> previousRoots = new ArrayList<>(Certificate.rootCAs);
+        LinkedHashSet<Certificate> previousRoots = Certificate.snapshotRootCAs();
         Certificate previousBuiltIn = Certificate.builtIn;
         boolean previousTrustBuiltIn = Certificate.isTrustBuiltIn();
 
         try {
-            Certificate.rootCAs.clear();
+            Certificate.setRootCAs(); // clear
             Certificate.setTrustBuiltIn(true);
 
             Certificate certificate = new Certificate(read("chain-demo.txt"));
@@ -79,9 +77,8 @@ public class CertificateTests {
         }
         finally {
             Certificate.setTrustBuiltIn(false);
-            Certificate.rootCAs.clear();
             Certificate.builtIn = previousBuiltIn;
-            Certificate.rootCAs.addAll(previousRoots);
+            Certificate.setRootCAs(previousRoots);
             Certificate.setTrustBuiltIn(previousTrustBuiltIn);
         }
     }
@@ -167,13 +164,12 @@ public class CertificateTests {
     }
 
     private void assertTrust(String certificateData, String rootResource, boolean trustExpected) throws Exception {
-        List<Certificate> previousRoots = new ArrayList<>(Certificate.rootCAs);
+        LinkedHashSet<Certificate> previousRoots = Certificate.snapshotRootCAs();
         Certificate previousBuiltIn = Certificate.builtIn;
 
         try {
-            Certificate.rootCAs.clear();
             Certificate root = new Certificate(read(rootResource));
-            Certificate.rootCAs.add(root);
+            Certificate.setRootCAs(root);
             Certificate.builtIn = root;
 
             Certificate certificate = new Certificate(certificateData);
@@ -183,9 +179,8 @@ public class CertificateTests {
             Assert.assertSame(Certificate.rootCAs.getFirst(), root);
         }
         finally {
-            Certificate.rootCAs.clear();
-            Certificate.rootCAs.addAll(previousRoots);
             Certificate.builtIn = previousBuiltIn;
+            Certificate.setRootCAs(previousRoots);
         }
     }
 

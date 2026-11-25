@@ -198,6 +198,7 @@
                 <include name="${project.filename}.jar"/>
                 <include name="LICENSE.txt"/>
                 <include name="override.crt"/>
+                <include name="agent/*.jar"/>
             </fileset>
         </copy>
         <copy file="assets/branding/apple-icon.icns" tofile="${bundle.dir}/Contents/Resources/${project.filename}.icns"/>

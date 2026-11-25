@@ -614,7 +614,7 @@ public class PrintOptions {
             }
             orientation = Orientation.from(jobSettings.getPageLayout());
             copies = jobSettings.getCopies();
-            size = null; // TODO: can size be trusted?
+            size = Size.from(jobSettings.getPageLayout().getPaper(), units);
         }
 
         /**
@@ -641,18 +641,17 @@ public class PrintOptions {
                             density = resolution.getFeedResolution(units.getMediaSizeUnits());
                             crossDensity = resolution.getCrossFeedResolution(units.getMediaSizeUnits());
                         }
-
+                        case MediaSizeName mediaSizeName -> size = Size.from(mediaSizeName, units);
+                        case MediaSize mediaSize-> size = Size.from(mediaSize, units);
                         default -> log.warn("Cannot map attribute {} to PrintOptions.Pixel field", val.getClass().getSimpleName());
                     }
                 }
             }
-
-            size = null; // TODO: can size be trusted?
         }
     }
 
     /** PrintService Defaults **/
-    public class Default {
+    public static class Default {
         private double density;
         private Size pageSize;
 
@@ -669,7 +668,7 @@ public class PrintOptions {
     // Sub options //
 
     /** Pixel page size options */
-    public class Size {
+    public static class Size {
         private double width = -1;  //Page width
         private double height = -1; //Page height
         private boolean custom = false; //Force a custom size
@@ -705,6 +704,23 @@ public class PrintOptions {
 
         // TODO: Make Size parsing non-null
         public boolean isInherited() { return inherited; }
+        
+        static Size from(MediaSize mediaSize, Unit unit) {
+            float x = mediaSize.getX(unit.getMediaSizeUnits());
+            float y = mediaSize.getY(unit.getMediaSizeUnits());
+            return new Size(x * unit.getDPIUnits(), y * unit.getDPIUnits(), true);
+        }
+        
+        static Size from(MediaSizeName mediaSizeName, Unit unit) {
+            Size size = from( MediaSize.getMediaSizeForName(mediaSizeName), unit);
+            size.custom = false;
+            return size;
+        }
+        
+        static Size from(Paper paper, Unit unit) {
+            // All javafx sizes are handled internally as "custom"
+            return new Size(paper.getWidth() * unit.getDPIUnits(), paper.getHeight() * unit.getDPIUnits(), true);
+        }
     }
 
     /** Pixel page margins options */

@@ -194,7 +194,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
             PrinterJob job = PrinterJob.createPrinterJob(fxPrinter);
 
-
             // apply option settings
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
             JobSettings settings = job.getJobSettings();

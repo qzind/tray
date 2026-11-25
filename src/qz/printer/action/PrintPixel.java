@@ -133,9 +133,8 @@ public abstract class PrintPixel {
             }
         }
 
-        PrintService printService = job.getPrintService();
-        CopiesSupported cSupport = (CopiesSupported)printService
-                .getSupportedAttributeValues(Copies.class, printService.getSupportedDocFlavors()[0], attributes);
+        CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
+                .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], attributes);
 
         if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
             attributes.add(new Copies(pxlOpts.getCopies()));
@@ -150,7 +149,7 @@ public abstract class PrintPixel {
     /**
      * Conditionally raises the native OS print dialog
      */
-    protected boolean showPrintDialog(PrintOptions.Pixel pxlOpts, Object printerJob, PrintRequestAttributeSet attributes) throws PrinterException {
+    protected boolean showPrintDialog(PrintOptions.Pixel pxlOpts, Object printerJob, PrintOutput output, PrintRequestAttributeSet attributes) throws PrinterException {
         if (!pxlOpts.isShowDialog()) {
             return false;
         }
@@ -164,6 +163,7 @@ public abstract class PrintPixel {
             case PrinterJob awt -> {
                 if(awt.printDialog(attributes)) {
                     pxlOpts.sync(attributes);
+                    output.setPrintService(awt.getPrintService());
                     yield true;
                 }
                 yield false;
@@ -171,6 +171,7 @@ public abstract class PrintPixel {
             case javafx.print.PrinterJob jfx -> {
                 if(jfx.showPrintDialog(null)) {
                     pxlOpts.sync(jfx.getJobSettings());
+                    output.setPrintService(jfx.getPrinter());
                     yield true;
                 }
                 yield false;

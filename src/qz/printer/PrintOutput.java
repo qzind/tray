@@ -1,5 +1,6 @@
 package qz.printer;
 
+import javafx.print.Printer;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.printer.info.NativePrinter;
@@ -57,6 +58,19 @@ public class PrintOutput {
         return printer != null && printer.getPrintService() != null && !printer.getPrintService().isNull();
     }
 
+    public void setPrintService(Object printer) {
+        this.printer = switch(printer) {
+            case NativePrinter nativePrinter -> nativePrinter;
+            case PrintService printService -> PrintServiceMatcher.getNativePrinterList().get(printService);
+            case Printer fxPrinter -> PrintServiceMatcher.matchPrinter(fxPrinter.getName(), true);
+            default -> null;
+        };
+    }
+    
+    public void setPrintService(Printer printer) {
+        
+    }
+    
     public PrintService getPrintService() {
         return printer.getPrintService().value();
     }

@@ -237,7 +237,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             log.warn("MacOS and Java < 1.8.0u202 cannot use attributes with PDF prints, disabling");
             attributes.clear();
         }
-        boolean prompted = showPrintDialog(pxlOpts, job, attributes);
+        boolean prompted = showPrintDialog(pxlOpts, job, output, attributes);
 
         RenderingHints hints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
         double useDensity = pxlOpts.getDensity();

@@ -1,13 +1,11 @@
 package qz.printer.status;
 
 import com.sun.jna.Pointer;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.printer.status.job.NativeJobStatus;
 
-import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -17,7 +15,7 @@ import java.util.HashMap;
 /**
  * Created by kyle on 4/27/17.
  */
-public class CupsStatusHandler extends AbstractHandler {
+public class CupsStatusHandler extends HttpServlet {
     private static final Logger log = LogManager.getLogger(CupsStatusHandler.class);
 
     private static Cups cups = Cups.INSTANCE;
@@ -25,8 +23,8 @@ public class CupsStatusHandler extends AbstractHandler {
     private HashMap<String, ArrayList<Status>> lastPrinterStatusMap = new HashMap<>();
     private HashMap<String, ArrayList<Status>> lastJobStatusMap = new HashMap<>();
 
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        baseRequest.setHandled(true);
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (request.getReader().readLine() != null) {
             getNotifications();
         }

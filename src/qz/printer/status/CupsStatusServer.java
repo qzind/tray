@@ -1,5 +1,7 @@
 package qz.printer.status;
 
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +28,9 @@ public class CupsStatusServer {
         boolean started = false;
         for(int p = 0; p < CUPS_RSS_PORTS.size(); p++) {
             server = new Server(CUPS_RSS_PORTS.get(p));
-            server.setHandler(new CupsStatusHandler());
+            ServletContextHandler context = new ServletContextHandler();
+            context.addServlet(new ServletHolder(new CupsStatusHandler()), "/*");
+            server.setHandler(context);
 
             try {
                 server.start();

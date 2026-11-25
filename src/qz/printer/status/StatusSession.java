@@ -2,7 +2,7 @@ package qz.printer.status;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.ee8.websocket.api.Session;
 import qz.App;
 import qz.printer.status.job.WmiJobStatusMap;
 import qz.utils.*;

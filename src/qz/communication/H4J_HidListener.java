@@ -1,7 +1,7 @@
 package qz.communication;
 
 import org.codehaus.jettison.json.JSONArray;
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.ee8.websocket.api.Session;
 import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
 import org.hid4java.HidServicesListener;

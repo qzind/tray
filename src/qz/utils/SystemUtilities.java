@@ -691,28 +691,6 @@ public class SystemUtilities {
         return false;
     }
 
-    /**
-     * Cross-platform SystemTray detector
-     */
-    public static boolean isSystemTraySupported() {
-        if(!App.isHeadless()) {
-            switch(getOs()) {
-                case WINDOWS:
-                    if(WindowsUtilities.isHiddenSystemTray()) {
-                        return false;
-                    }
-                    break;
-                case MAC:
-                    break;
-                default:
-                    // Linux System Tray support is abysmal, always use TaskbarTrayIcon
-                    return false;
-            }
-            return SystemTray.isSupported();
-        }
-        return false;
-    }
-
     public static String parseRootDomain(String urlString) {
         try {
             // 1. Parse the URL string

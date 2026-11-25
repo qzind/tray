@@ -9,6 +9,7 @@ import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

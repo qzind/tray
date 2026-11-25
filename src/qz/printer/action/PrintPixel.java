@@ -10,6 +10,7 @@ import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
+import javax.print.PrintService;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.*;
@@ -132,8 +133,9 @@ public abstract class PrintPixel {
             }
         }
 
-        CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
-                .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], attributes);
+        PrintService printService = job.getPrintService();
+        CopiesSupported cSupport = (CopiesSupported)printService
+                .getSupportedAttributeValues(Copies.class, printService.getSupportedDocFlavors()[0], attributes);
 
         if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
             attributes.add(new Copies(pxlOpts.getCopies()));
@@ -161,14 +163,12 @@ public abstract class PrintPixel {
         boolean result = switch(printerJob) {
             case PrinterJob awt -> {
                 if(awt.printDialog(attributes)) {
-                    awt.getPrintService();
                     pxlOpts.sync(attributes);
                     yield true;
                 }
                 yield false;
             }
             case javafx.print.PrinterJob jfx -> {
-                System.err.println("Printer: " + jfx.getPrinter().getName());
                 if(jfx.showPrintDialog(null)) {
                     pxlOpts.sync(jfx.getJobSettings());
                     yield true;

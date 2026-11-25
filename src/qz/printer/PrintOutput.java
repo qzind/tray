@@ -59,16 +59,16 @@ public class PrintOutput {
     }
 
     public void setPrintService(Object printer) {
-        this.printer = switch(printer) {
+        NativePrinter selected = switch(printer) {
             case NativePrinter nativePrinter -> nativePrinter;
             case PrintService printService -> PrintServiceMatcher.getNativePrinterList().get(printService);
             case Printer fxPrinter -> PrintServiceMatcher.matchPrinter(fxPrinter.getName(), true);
             default -> null;
         };
-    }
-    
-    public void setPrintService(Printer printer) {
-        
+
+        if (selected != null) {
+            this.printer = selected;
+        }
     }
     
     public PrintService getPrintService() {

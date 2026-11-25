@@ -1,11 +1,25 @@
 package qz.printer;
 
+import javafx.print.Paper;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.utils.PrintingUtilities;
 
+import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.standard.MediaSizeName;
+
 public class PrintOptionsTests {
+    @DataProvider
+    public Object[][] sizeUnits() {
+        return new Object[][] {
+                { "in", 8.5, 11.0 },
+                { "cm", 21.59, 27.94 },
+                { "mm", 215.9, 279.4 },
+        };
+    }
+
     @Test
     public void testDialogDefault() throws Exception {
         PrintOptions printOptions = new PrintOptions(new JSONObject(), new PrintOutput(null), PrintingUtilities.Format.PDF);
@@ -85,6 +99,30 @@ public class PrintOptionsTests {
         Assert.assertNull(printOptions.getPixelOptions().getSize());
     }
 
+    @Test(dataProvider = "sizeUnits")
+    public void testAwtSize(String units, double width, double height) throws Exception {
+        PrintOptions.Pixel options = createUnitOptions(units);
+        HashPrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
+        attributes.add(MediaSizeName.NA_LETTER);
+
+        options.sync(attributes);
+
+        Assert.assertEquals(options.getSize().getWidth(), width, 0.01);
+        Assert.assertEquals(options.getSize().getHeight(), height, 0.01);
+        Assert.assertFalse(options.getSize().isCustom());
+    }
+
+    @Test(dataProvider = "sizeUnits")
+    public void testJavaFxSize(String units, double width, double height) throws Exception {
+        PrintOptions.Pixel options = createUnitOptions(units);
+
+        PrintOptions.Size size = PrintOptions.Size.from(Paper.NA_LETTER, options.getUnits());
+
+        Assert.assertEquals(size.getWidth(), width, 0.01);
+        Assert.assertEquals(size.getHeight(), height, 0.01);
+        Assert.assertTrue(size.isCustom());
+    }
+
     @Test
     public void testLegacyEncodingStringForm() throws Exception {
         JSONObject options = new JSONObject().put("encoding", "legacy");
@@ -113,5 +151,10 @@ public class PrintOptionsTests {
     private PrintOptions createDialogOptions(boolean showDialog, PrintingUtilities.Format format) throws Exception {
         JSONObject options = new JSONObject().put("showDialog", showDialog);
         return new PrintOptions(options, new PrintOutput(null), format);
+    }
+
+    private PrintOptions.Pixel createUnitOptions(String units) throws Exception {
+        JSONObject options = new JSONObject().put("units", units);
+        return new PrintOptions(options, new PrintOutput(null), PrintingUtilities.Format.PDF).getPixelOptions();
     }
 }

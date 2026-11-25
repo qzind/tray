@@ -627,6 +627,7 @@ public class PrintOptions {
                     OrientationRequested.class,
                     Copies.class,
                     PrinterResolution.class,
+                    Media.class,
                     };
 
             for(Class<?> attribute : attributes) {
@@ -641,8 +642,12 @@ public class PrintOptions {
                             density = resolution.getFeedResolution(units.getMediaSizeUnits());
                             crossDensity = resolution.getCrossFeedResolution(units.getMediaSizeUnits());
                         }
-                        case MediaSizeName mediaSizeName -> size = Size.from(mediaSizeName, units);
-                        case MediaSize mediaSize-> size = Size.from(mediaSize, units);
+                        case MediaSizeName mediaSizeName -> {
+                            Size selected = Size.from(mediaSizeName, units);
+                            if (selected != null) {
+                                size = selected;
+                            }
+                        }
                         default -> log.warn("Cannot map attribute {} to PrintOptions.Pixel field", val.getClass().getSimpleName());
                     }
                 }
@@ -708,18 +713,24 @@ public class PrintOptions {
         static Size from(MediaSize mediaSize, Unit unit) {
             float x = mediaSize.getX(unit.getMediaSizeUnits());
             float y = mediaSize.getY(unit.getMediaSizeUnits());
-            return new Size(x * unit.getDPIUnits(), y * unit.getDPIUnits(), true);
+            return new Size(x, y, true);
         }
         
         static Size from(MediaSizeName mediaSizeName, Unit unit) {
-            Size size = from( MediaSize.getMediaSizeForName(mediaSizeName), unit);
+            MediaSize mediaSize = MediaSize.getMediaSizeForName(mediaSizeName);
+            if (mediaSize == null) {
+                return null;
+            }
+
+            Size size = from(mediaSize, unit);
             size.custom = false;
             return size;
         }
         
         static Size from(Paper paper, Unit unit) {
-            // All javafx sizes are handled internally as "custom"
-            return new Size(paper.getWidth() * unit.getDPIUnits(), paper.getHeight() * unit.getDPIUnits(), true);
+            // JavaFX supplies the accepted dimensions without a MediaSizeName
+            double pointsPerUnit = 72d * unit.toInches();
+            return new Size(paper.getWidth() / pointsPerUnit, paper.getHeight() / pointsPerUnit, true);
         }
     }
 

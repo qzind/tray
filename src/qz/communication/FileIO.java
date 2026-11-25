@@ -5,7 +5,7 @@ import org.apache.commons.io.IOCase;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.ee8.websocket.api.Session;
 import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 

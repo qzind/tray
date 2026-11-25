@@ -12,28 +12,13 @@
         <dependency name="jna-platform" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
         <dependency name="${semver.name}" org="${semver.org}" conf="*->default" rev="${semver.rev}"/>
 
-        <!--====== WebSocket ======-->
-        <dependency name="${websocket-api.name}" org="${websocket-api.org}" conf="*->default"  rev="${websocket-api.rev}"/>
-        <dependency name="jetty-servlet-api" org="${servlet-api.org}" conf="*->default" rev="${servlet-api.rev}"/>
-
         <!--====== Jetty ======-->
-        <dependency name="jetty-client" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-http" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-io" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-security" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-server" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-servlet" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-util" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-
-        <!--====== Jetty WebSocket ======-->
-        <dependency name="websocket-core-client" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="websocket-core-common" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="websocket-core-server" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="websocket-jetty-api" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="websocket-jetty-client" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="websocket-jetty-common" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="websocket-jetty-server" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="websocket-servlet" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
+        <dependency name="${jetty.name}" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
+        <dependency name="jetty-ee8-websocket-jetty-client" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
+        <dependency name="jetty-ee8-websocket-jetty-server" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}">
+            <!-- QZ registers websocket mappings directly and does not scan web applications -->
+            <exclude org="org.eclipse.jetty.ee8" module="jetty-ee8-annotations"/>
+        </dependency>
 
         <!--====== Apache Commons ======-->
         <dependency name="commons-codec" org="${commons-codec.org}" conf="*->default" rev="${commons-codec.rev}"/>

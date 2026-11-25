@@ -1,6 +1,6 @@
 package qz.communication;
 
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.ee8.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import purejavahidapi.DeviceRemovalListener;

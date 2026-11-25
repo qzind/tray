@@ -14,11 +14,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.ee8.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee8.websocket.servlet.WebSocketUpgradeFilter;
 import qz.App;
 import qz.common.TrayManager;
 import qz.installer.certificate.CertificateManager;
@@ -133,7 +132,7 @@ public class PrintSocketServer {
                 trayManager.setServer(server, websocketPorts);
                 server.join();
             }
-            catch(IOException | MultiException e) {
+            catch(IOException e) {
                 //order of getConnectors is the order we added them -> insecure first
                 if (server.isFailed()) {
                     websocketPorts.nextInsecureIndex();
@@ -182,7 +181,7 @@ public class PrintSocketServer {
                     server.stop();
                     runningSecure.set(true);
                 }
-                catch(IOException | MultiException e) {
+                catch(IOException e) {
                     if (server.isFailed()) {
                         websocketPorts.nextSecureIndex();
                     }

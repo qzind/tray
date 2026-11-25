@@ -14,8 +14,8 @@
 
         <!--====== Jetty ======-->
         <dependency name="${jetty.name}" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-ee8-websocket-jetty-client" org="${jetty-websocket.org}" conf="*->default" rev="${jetty.rev}"/>
-        <dependency name="jetty-ee8-websocket-jetty-server" org="${jetty-websocket.org}" conf="*->default" rev="${jetty.rev}">
+        <dependency name="jetty-ee8-websocket-jetty-client" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
+        <dependency name="jetty-ee8-websocket-jetty-server" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}">
             <!-- QZ registers websocket mappings directly and does not scan web applications -->
             <exclude org="org.eclipse.jetty.ee8" module="jetty-ee8-annotations"/>
         </dependency>

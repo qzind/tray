@@ -628,6 +628,7 @@ public class PrintOptions {
                     Copies.class,
                     PrinterResolution.class,
                     Media.class,
+                    MediaPrintableArea.class,
                     };
 
             for(Class<?> attribute : attributes) {
@@ -648,6 +649,7 @@ public class PrintOptions {
                                 size = selected;
                             }
                         }
+                        case MediaPrintableArea mediaPrintableArea -> Size.from(mediaPrintableArea, units);
                         default -> log.warn("Cannot map attribute {} to PrintOptions.Pixel field", val.getClass().getSimpleName());
                     }
                 }
@@ -710,9 +712,9 @@ public class PrintOptions {
         // TODO: Make Size parsing non-null
         public boolean isInherited() { return inherited; }
         
-        static Size from(MediaSize mediaSize, Unit unit) {
-            float x = mediaSize.getX(unit.getMediaSizeUnits());
-            float y = mediaSize.getY(unit.getMediaSizeUnits());
+        static Size from(MediaPrintableArea mediaPrintableArea, Unit unit) {
+            float x = mediaPrintableArea.getWidth(unit.getMediaSizeUnits());
+            float y = mediaPrintableArea.getHeight(unit.getMediaSizeUnits());
             return new Size(x, y, true);
         }
         
@@ -722,9 +724,9 @@ public class PrintOptions {
                 return null;
             }
 
-            Size size = from(mediaSize, unit);
-            size.custom = false;
-            return size;
+            float x = mediaSize.getX(unit.getMediaSizeUnits());
+            float y = mediaSize.getY(unit.getMediaSizeUnits());
+            return new Size(x, y, false);
         }
         
         static Size from(Paper paper, Unit unit) {

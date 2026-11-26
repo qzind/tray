@@ -194,7 +194,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
             PrinterJob job = PrinterJob.createPrinterJob(fxPrinter);
 
-
             // apply option settings
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
             JobSettings settings = job.getJobSettings();
@@ -276,6 +275,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
             settings.setCopies(pxlOpts.getCopies());
             log.trace("{}", settings.toString());
+            showPrintDialog(pxlOpts, job, output,null);
 
             //javaFX lies about this value, so pull from original print service
             CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
@@ -313,6 +313,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         PageFormat page = job.getPageFormat(null);
 
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
+        showPrintDialog(pxlOpts, job, output, attributes);
 
         //setup swing ui
         JFrame legacyFrame = new JFrame(pxlOpts.getJobName(Constants.HTML_PRINT));

@@ -237,6 +237,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             log.warn("MacOS and Java < 1.8.0u202 cannot use attributes with PDF prints, disabling");
             attributes.clear();
         }
+        boolean prompted = showPrintDialog(pxlOpts, job, output, attributes);
 
         RenderingHints hints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
         double useDensity = pxlOpts.getDensity();
@@ -254,11 +255,16 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         BookBundle bundle = new BookBundle();
 
         for(PDDocument doc : printables) {
-            PageFormat page = job.getPageFormat(null);
-            if (pxlOpts.getSize() != null && pxlOpts.getSize().isInherited()) {
-                applyInheritedSize(page, doc.getPage(0));
+            PageFormat page;
+            if (prompted) {
+                page = job.getPageFormat(attributes);
+            } else {
+                page = job.getPageFormat(null);
+                if (pxlOpts.getSize() != null && pxlOpts.getSize().isInherited()) {
+                    applyInheritedSize(page, doc.getPage(0));
+                }
+                applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
             }
-            applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
             //trick pdfbox into an alternate doc size if specified
             if (docWidth > 0 || docHeight > 0) {

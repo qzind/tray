@@ -166,6 +166,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
+        if (showPrintDialog(pxlOpts, job, output, attributes)) {
+            page = job.getPageFormat(attributes);
+        }
 
         scaleImage = pxlOpts.isScaleContent();
         dithering = pxlOpts.getDithering();

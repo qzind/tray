@@ -66,7 +66,6 @@ public class Constants {
     public static final String ALLOW_SITES_TEXT = "Permanently allowed \"%s\" to access local resources";
     public static final String BLOCK_SITES_TEXT = "Permanently blocked \"%s\" from accessing local resources";
 
-    // Declared in full rather than derived from BLOCK_SITES_TEXT, which relied on English word spacing
     public static final String BLOCK_SITES_CONFIRM = "Permanently block \"%s\" from accessing local resources?";
 
     public static final String REMEMBER_THIS_DECISION = "Remember this decision";
